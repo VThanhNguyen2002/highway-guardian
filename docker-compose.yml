@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  highway-guardian:
+    build: .
+    container_name: highway-guardian-app
+    ports:
+      - "8000:8000"
+      - "8501:8501"  # Streamlit port
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./logs:/app/logs
+      - ./results:/app/results
+    environment:
+      - PYTHONPATH=/app
+      - CUDA_VISIBLE_DEVICES=0  # Use GPU if available
+    restart: unless-stopped
+    networks:
+      - highway-guardian-network
+
+  jupyter:
+    build: .
+    container_name: highway-guardian-jupyter
+    command: jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root --NotebookApp.token=''
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./:/app
+    environment:
+      - PYTHONPATH=/app
+    restart: unless-stopped
+    networks:
+      - highway-guardian-network
+
+  tensorboard:
+    build: .
+    container_name: highway-guardian-tensorboard
+    command: tensorboard --logdir=/app/logs --host=0.0.0.0 --port=6006
+    ports:
+      - "6006:6006"
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - highway-guardian-network
+
+networks:
+  highway-guardian-network:
+    driver: bridge
+
+volumes:
+  data:
+  models:
+  logs:
+  results:

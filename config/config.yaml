@@ -1,0 +1,291 @@
+# Highway Guardian Configuration File
+# Cấu hình cho hệ thống nhận diện biển báo giao thông và phân loại xe
+
+# General Settings
+general:
+  project_name: "Highway Guardian"
+  version: "1.0.0"
+  author: "VThanhNguyen2002"
+  device: "auto"  # auto, cpu, cuda
+  seed: 42
+  debug: false
+
+# Data Configuration
+data:
+  # Traffic Signs
+  traffic_signs:
+    train_path: "data/traffic_signs/train"
+    val_path: "data/traffic_signs/val"
+    test_path: "data/traffic_signs/test"
+    classes_file: "data/traffic_signs/classes.yaml"
+    image_size: [640, 640]
+    batch_size: 32
+    num_workers: 4
+    
+  # Vehicles
+  vehicles:
+    train_path: "data/vehicles/train"
+    val_path: "data/vehicles/val"
+    test_path: "data/vehicles/test"
+    classes_file: "data/vehicles/classes.yaml"
+    image_size: [640, 640]
+    batch_size: 32
+    num_workers: 4
+
+# Model Configuration
+models:
+  # Traffic Sign Detection (YOLO)
+  traffic_sign_detector:
+    architecture: "yolov8n"  # yolov8n, yolov8s, yolov8m, yolov8l, yolov8x
+    weights: "models/yolo/traffic_signs_best.pt"
+    confidence: 0.5
+    iou_threshold: 0.45
+    max_detections: 100
+    input_size: [640, 640]
+    
+  # Traffic Sign Classification (CNN)
+  traffic_sign_classifier:
+    architecture: "efficientnet_b0"  # resnet50, efficientnet_b0, mobilenet_v3
+    weights: "models/cnn/traffic_signs_classifier.pt"
+    num_classes: 43  # GTSRB classes
+    input_size: [224, 224]
+    dropout: 0.3
+    
+  # Vehicle Detection (YOLO)
+  vehicle_detector:
+    architecture: "yolov8s"
+    weights: "models/yolo/vehicles_best.pt"
+    confidence: 0.6
+    iou_threshold: 0.45
+    max_detections: 50
+    input_size: [640, 640]
+    
+  # Vehicle Classification (CNN)
+  vehicle_classifier:
+    architecture: "resnet50"
+    weights: "models/cnn/vehicle_classifier.pt"
+    num_classes: 20  # Vehicle types + brands
+    input_size: [224, 224]
+    dropout: 0.5
+
+# Training Configuration
+training:
+  # General training settings
+  epochs: 100
+  patience: 10
+  save_best_only: true
+  save_frequency: 5
+  
+  # Optimizer settings
+  optimizer:
+    name: "adam"  # adam, sgd, adamw
+    lr: 0.001
+    weight_decay: 0.0001
+    momentum: 0.9  # for SGD
+    
+  # Scheduler settings
+  scheduler:
+    name: "cosine"  # cosine, step, plateau
+    factor: 0.1
+    patience: 5
+    min_lr: 0.00001
+    
+  # Loss functions
+  loss:
+    detection: "yolo_loss"
+    classification: "cross_entropy"
+    label_smoothing: 0.1
+    
+  # Data augmentation
+  augmentation:
+    enabled: true
+    rotation: 15
+    brightness: 0.2
+    contrast: 0.2
+    saturation: 0.2
+    hue: 0.1
+    horizontal_flip: false  # Don't flip traffic signs
+    vertical_flip: false
+    mixup: 0.2
+    cutmix: 0.2
+
+# Evaluation Configuration
+evaluation:
+  metrics:
+    - "accuracy"
+    - "precision"
+    - "recall"
+    - "f1_score"
+    - "map"  # for detection
+    - "map50"  # mAP@0.5
+    - "map75"  # mAP@0.75
+  
+  # Confidence thresholds for evaluation
+  confidence_thresholds: [0.1, 0.3, 0.5, 0.7, 0.9]
+  iou_thresholds: [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95]
+
+# Inference Configuration
+inference:
+  # Input settings
+  input_formats: ["jpg", "jpeg", "png", "bmp", "mp4", "avi", "mov"]
+  output_format: "json"  # json, xml, csv
+  
+  # Visualization settings
+  visualization:
+    enabled: true
+    show_confidence: true
+    show_labels: true
+    font_size: 12
+    line_thickness: 2
+    
+  # Colors for different classes (BGR format)
+  colors:
+    traffic_signs:
+      prohibitory: [0, 0, 255]      # Red
+      warning: [0, 255, 255]        # Yellow
+      mandatory: [255, 0, 0]        # Blue
+      informative: [0, 255, 0]      # Green
+    
+    vehicles:
+      car: [255, 0, 255]            # Magenta
+      truck: [0, 165, 255]          # Orange
+      bus: [255, 255, 0]            # Cyan
+      motorcycle: [128, 0, 128]     # Purple
+
+# Logging Configuration
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "logs/highway_guardian.log"
+  max_size: "10MB"
+  backup_count: 5
+  
+  # Experiment tracking
+  wandb:
+    enabled: false
+    project: "highway-guardian"
+    entity: "vthanhnguyen2002"
+    
+  tensorboard:
+    enabled: true
+    log_dir: "logs/tensorboard"
+
+# API Configuration
+api:
+  host: "0.0.0.0"
+  port: 8000
+  workers: 1
+  timeout: 30
+  max_request_size: "10MB"
+  
+  # Rate limiting
+  rate_limit:
+    enabled: true
+    requests_per_minute: 60
+    
+  # CORS settings
+  cors:
+    enabled: true
+    origins: ["*"]
+    methods: ["GET", "POST"]
+    headers: ["*"]
+
+# Database Configuration (for future use)
+database:
+  type: "sqlite"  # sqlite, postgresql, mysql
+  path: "data/highway_guardian.db"
+  host: "localhost"
+  port: 5432
+  username: "user"
+  password: "password"
+  database: "highway_guardian"
+
+# Deployment Configuration
+deployment:
+  # Docker settings
+  docker:
+    image_name: "highway-guardian"
+    tag: "latest"
+    registry: "docker.io"
+    
+  # Cloud settings
+  cloud:
+    provider: "aws"  # aws, gcp, azure
+    region: "us-east-1"
+    instance_type: "g4dn.xlarge"
+    
+  # Edge deployment
+  edge:
+    target: "raspberry_pi"  # raspberry_pi, jetson_nano, mobile
+    optimization: "tensorrt"  # tensorrt, openvino, tflite
+
+# Performance Configuration
+performance:
+  # Memory management
+  memory:
+    max_memory_usage: "8GB"
+    cache_size: "1GB"
+    
+  # Processing settings
+  processing:
+    max_batch_size: 8
+    num_threads: 4
+    use_mixed_precision: true
+    
+  # Optimization settings
+  optimization:
+    model_optimization: true
+    quantization: "int8"  # fp16, int8
+    pruning: false
+    distillation: false
+
+# Traffic Sign Categories (Vietnamese)
+traffic_sign_categories:
+  prohibitory:
+    - "P.1": "Cấm đi ngược chiều"
+    - "P.12": "Cấm xe ô tô"
+    - "P.15": "Cấm xe máy"
+    - "P.21": "Cấm rẽ trái"
+    - "P.22": "Cấm rẽ phải"
+    
+  warning:
+    - "W.1": "Chỗ ngoặt nguy hiểm"
+    - "W.15": "Đường giao nhau"
+    - "W.20": "Trẻ em"
+    - "W.25": "Công trường"
+    
+  mandatory:
+    - "R.1": "Đường bắt buộc"
+    - "R.5": "Hướng đi thẳng"
+    - "R.10": "Làn đường dành cho xe buýt"
+    
+  informative:
+    - "I.1": "Chỉ dẫn địa danh"
+    - "I.15": "Bệnh viện"
+    - "I.20": "Trạm xăng"
+
+# Vehicle Categories
+vehicle_categories:
+  types:
+    - "car": "Xe con"
+    - "truck": "Xe tải"
+    - "bus": "Xe buýt"
+    - "motorcycle": "Xe máy"
+    - "bicycle": "Xe đạp"
+    
+  brands:
+    japanese:
+      - "toyota": "Toyota"
+      - "honda": "Honda"
+      - "nissan": "Nissan"
+      - "mazda": "Mazda"
+      
+    german:
+      - "bmw": "BMW"
+      - "mercedes": "Mercedes-Benz"
+      - "audi": "Audi"
+      - "volkswagen": "Volkswagen"
+      
+    korean:
+      - "hyundai": "Hyundai"
+      - "kia": "Kia"
