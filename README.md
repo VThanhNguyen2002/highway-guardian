@@ -114,4 +114,4 @@ Dự án này được phân phối dưới giấy phép MIT. Xem [LICENSE](LICE
 
 ## Tài liệu Tham khảo
 
-Xem [world.md](world.md) để có cái nhìn tổng quan về lý thuyết và các khái niệm liên quan đến nhận diện biển báo giao thông và phân loại xe.
+Xem [BaseKnowledge.md](BaseKnowledge.md) để có cái nhìn tổng quan về lý thuyết và các khái niệm liên quan đến nhận diện biển báo giao thông và phân loại xe.
