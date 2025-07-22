@@ -37,13 +37,22 @@ Highway Guardian là một hệ thống AI tiên tiến được thiết kế đ
 highway-guardian/
 ├── data/                    # Tập dữ liệu
 │   ├── traffic_signs/      # Dữ liệu biển báo
-│   └── vehicles/           # Dữ liệu xe
+│   ├── vehicles/           # Dữ liệu xe
+│   └── runs/               # Kết quả training
+│       └── detect/         # Kết quả YOLO detection
+│           ├── car_yolo112/    # Mô hình phát hiện xe
+│           ├── sign_yolo85/    # Mô hình phát hiện biển báo
+│           └── sign_yolo85_ft/ # Mô hình fine-tuned
 ├── models/                 # Các mô hình AI
 │   ├── cnn/               # Mô hình CNN
 │   └── yolo/              # Mô hình YOLO
 ├── src/                   # Source code
 │   ├── detection/         # Module phát hiện
 │   ├── classification/    # Module phân loại
+│   ├── training/          # Module training
+│   │   ├── notebooks/     # Jupyter notebooks
+│   │   ├── scripts/       # Python training scripts
+│   │   └── configs/       # Cấu hình training
 │   └── utils/             # Tiện ích
 ├── tests/                 # Test cases
 ├── roadmap/              # Roadmap và test structures
@@ -52,11 +61,41 @@ highway-guardian/
 └── world.md              # Lý thuyết tổng hợp
 ```
 
+## Kết quả Training và Mô hình
+
+### Mô hình Phát hiện Xe (Car Detection)
+- **Mô hình**: YOLOv8n
+- **Epochs**: 112
+- **Dataset**: Custom car dataset
+- **Kết quả**: Mô hình đã được training thành công
+- **Lưu trữ**: `src/data/runs/detect/car_yolo112/`
+
+### Mô hình Phát hiện Biển báo (Traffic Sign Detection)
+- **Mô hình**: YOLOv8s
+- **Epochs**: 120 (base) + 20 (fine-tuning)
+- **Dataset**: 25 classes traffic signs
+- **Kết quả**:
+  - **mAP50**: 0.863 (86.3%)
+  - **mAP50-95**: 0.593 (59.3%)
+- **Lưu trữ**: 
+  - Base model: `src/data/runs/detect/sign_yolo85/`
+  - Fine-tuned: `src/data/runs/detect/sign_yolo85_ft/`
+
+### Training Scripts và Configs
+- **Notebooks**: `src/training/notebooks/Car_Traffic_Detection.ipynb`
+- **Python Scripts**: 
+  - `src/training/scripts/train_car_detection.py`
+  - `src/training/scripts/train_sign_detection.py`
+  - `src/training/scripts/evaluate_model.py`
+- **Configs**: 
+  - `src/training/configs/car_detection_config.yaml`
+  - `src/training/configs/sign_detection_config.yaml`
+
 ## Công nghệ Sử dụng
 
-- **Deep Learning**: TensorFlow, PyTorch
+- **Deep Learning**: TensorFlow, PyTorch, Ultralytics
 - **Computer Vision**: OpenCV, PIL
-- **Object Detection**: YOLOv8, YOLO variants
+- **Object Detection**: YOLOv8, YOLOv11
 - **CNN Frameworks**: Keras, TensorFlow
 - **Containerization**: Docker
 - **Data Processing**: NumPy, Pandas
@@ -96,6 +135,38 @@ pip install -r requirements.txt
 
 # Run application
 python src/main.py
+```
+
+### Training Mô hình
+
+#### Sử dụng Python Scripts
+```bash
+# Training car detection
+python src/training/scripts/train_car_detection.py --config src/training/configs/car_detection_config.yaml
+
+# Training sign detection
+python src/training/scripts/train_sign_detection.py --config src/training/configs/sign_detection_config.yaml
+
+# Resume training từ checkpoint
+python src/training/scripts/train_sign_detection.py --config src/training/configs/sign_detection_config.yaml --resume
+```
+
+#### Sử dụng Jupyter Notebook
+```bash
+# Mở notebook
+jupyter notebook src/training/notebooks/Car_Traffic_Detection.ipynb
+```
+
+### Đánh giá Mô hình
+```bash
+# Đánh giá mô hình đơn lẻ
+python src/training/scripts/evaluate_model.py --model_path src/data/runs/detect/sign_yolo85/weights/best.pt --data_path src/data/config_yaml/sign_det.yaml
+
+# Đánh giá chi tiết với visualization
+python src/training/scripts/evaluate_model.py --model_path src/data/runs/detect/sign_yolo85/weights/best.pt --data_path src/data/config_yaml/sign_det.yaml --detailed
+
+# So sánh nhiều mô hình
+python src/training/scripts/evaluate_model.py --compare model1.pt model2.pt --data_path data.yaml
 ```
 
 ## Đóng góp

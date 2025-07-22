@@ -1,0 +1,79 @@
+# Sign Detection Training Configuration
+
+# Dataset Configuration
+data:
+  path: "../../data/datasets/traffic-signs"
+  train: "train/images"
+  val: "val/images"
+  test: "test/images"
+  nc: 25  # number of classes
+  names: [
+    'Cấm đi ngược chiều', 'Cấm đỗ xe', 'Cấm dừng & đỗ', 'Cấm rẽ trái', 'Cấm quay đầu',
+    'Cấm quay đầu & rẽ trái', 'Cấm xe máy', 'Cấm ô-tô', 'Cấm xe tải', 'Biển cấm khác',
+    'Chỉ dẫn', 'Hướng đi', 'Hạn chế tốc độ', 'Giới hạn tải trọng', 'Giới hạn chiều cao',
+    'Vạch sang đường', 'Nguy hiểm giao nhau', 'Nguy hiểm đường trơn', 'Nguy hiểm người đi bộ',
+    'Công trường', 'Đi chậm', 'Cảnh báo khác', 'Làn xe được phép', 'Làn xe & tốc độ',
+    'Hết cấm', 'Khác'
+  ]
+
+# Model Configuration
+model:
+  architecture: "yolov8s"  # yolov8n, yolov8s, yolov8m, yolov8l, yolov8x
+  pretrained: true
+  weights: "yolov8s.pt"
+
+# Training Parameters
+training:
+  epochs: 120
+  batch_size: 16
+  image_size: 960
+  device: "auto"  # auto, cpu, 0, 1, 2, 3...
+  workers: 8
+  
+  # Optimizer
+  optimizer: "AdamW"  # SGD, Adam, AdamW
+  lr0: 0.002  # initial learning rate
+  lrf: 0.01  # final learning rate factor
+  momentum: 0.937
+  weight_decay: 0.0005
+  warmup_epochs: 3.0
+  
+  # Loss weights
+  box: 7.5
+  cls: 0.5
+  dfl: 1.5
+
+# Data Augmentation
+augmentation:
+  hsv_h: 0.015
+  hsv_s: 0.7
+  hsv_v: 0.4
+  degrees: 0.0
+  translate: 0.1
+  scale: 0.5
+  shear: 0.0
+  perspective: 0.0
+  flipud: 0.0
+  fliplr: 0.5
+  mosaic: 1.0
+  mixup: 0.0
+  copy_paste: 0.0
+  close_mosaic: 10  # disable mosaic in last N epochs
+
+# Validation
+validation:
+  save_period: -1  # save model every x epochs
+  patience: 100  # early stopping patience
+  conf: 0.25  # confidence threshold
+  iou: 0.7  # IoU threshold for NMS
+  max_det: 300  # maximum detections per image
+
+# Output
+output:
+  project: "../runs/sign_detection"
+  name: "experiment"
+  save_txt: false
+  save_conf: false
+  save_crop: false
+  plots: true
+  verbose: true

@@ -1,0 +1,71 @@
+# Car Detection Training Configuration
+
+# Dataset Configuration
+data:
+  path: "../../data/datasets/car-detection-dataset"
+  train: "train/images"
+  val: "val/images"
+  test: "test/images"
+  nc: 1  # number of classes
+  names: ['car']  # class names
+
+# Model Configuration
+model:
+  architecture: "yolov8n"  # yolov8n, yolov8s, yolov8m, yolov8l, yolov8x
+  pretrained: true
+  weights: "yolov8n.pt"
+
+# Training Parameters
+training:
+  epochs: 100
+  batch_size: 32
+  image_size: 640
+  device: "auto"  # auto, cpu, 0, 1, 2, 3...
+  workers: 8
+  
+  # Optimizer
+  optimizer: "SGD"  # SGD, Adam, AdamW
+  lr0: 0.01  # initial learning rate
+  lrf: 0.01  # final learning rate factor
+  momentum: 0.937
+  weight_decay: 0.0005
+  warmup_epochs: 3.0
+  
+  # Loss weights
+  box: 7.5
+  cls: 0.5
+  dfl: 1.5
+
+# Data Augmentation
+augmentation:
+  hsv_h: 0.015
+  hsv_s: 0.7
+  hsv_v: 0.4
+  degrees: 0.0
+  translate: 0.1
+  scale: 0.5
+  shear: 0.0
+  perspective: 0.0
+  flipud: 0.0
+  fliplr: 0.5
+  mosaic: 1.0
+  mixup: 0.0
+  copy_paste: 0.0
+
+# Validation
+validation:
+  save_period: -1  # save model every x epochs
+  patience: 100  # early stopping patience
+  conf: 0.25  # confidence threshold
+  iou: 0.7  # IoU threshold for NMS
+  max_det: 300  # maximum detections per image
+
+# Output
+output:
+  project: "../runs/car_detection"
+  name: "experiment"
+  save_txt: false
+  save_conf: false
+  save_crop: false
+  plots: true
+  verbose: true

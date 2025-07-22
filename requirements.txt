@@ -1,8 +1,8 @@
-# Deep Learning Frameworks
-tensorflow>=2.13.0
-torch>=2.0.0
-torchvision>=0.15.0
-ultralytics>=8.0.0
+# Deep Learning Frameworks (Google Colab Compatible)
+# For CUDA support: pip install torch==2.3.0 torchvision==0.18.0 --index-url https://download.pytorch.org/whl/cu118
+torch==2.3.0
+torchvision==0.18.0
+ultralytics==8.1.25
 
 # Computer Vision
 opencv-python>=4.8.0
@@ -24,6 +24,9 @@ plotly>=5.15.0
 wandb>=0.15.0
 tensorboard>=2.13.0
 tqdm>=4.65.0
+
+# Data Download & Management
+kaggle>=1.5.0
 
 # API & Web
 fastapi>=0.100.0
