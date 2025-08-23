@@ -1,0 +1,55 @@
+augmentation:
+  copy_paste: 0.0
+  degrees: 0.0
+  fliplr: 0.5
+  flipud: 0.0
+  hsv_h: 0.015
+  hsv_s: 0.7
+  hsv_v: 0.4
+  mixup: 0.0
+  mosaic: 1.0
+  perspective: 0.0
+  scale: 0.5
+  shear: 0.0
+  translate: 0.1
+data:
+  names:
+  - vehicle
+  nc: 1
+  path: C:\PersonalProject\highway-guardian\data\demo_dataset
+  test: test/images
+  train: train/images
+  val: val/images
+model:
+  architecture: yolov8n
+  pretrained: true
+  weights: yolov8n.pt
+output:
+  name: demo_experiment
+  plots: true
+  project: runs/demo_training
+  save_conf: false
+  save_crop: false
+  save_txt: false
+  verbose: true
+training:
+  batch_size: 8
+  box: 7.5
+  cls: 0.5
+  device: auto
+  dfl: 1.5
+  epochs: 10
+  image_size: 640
+  lr0: 0.01
+  lrf: 0.01
+  momentum: 0.937
+  optimizer: SGD
+  warmup_epochs: 1.0
+  weight_decay: 0.0005
+  workers: 2
+validation:
+  conf: 0.25
+  iou: 0.7
+  max_det: 300
+  patience: 100
+  save_period: -1

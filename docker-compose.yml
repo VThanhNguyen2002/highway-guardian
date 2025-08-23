@@ -8,13 +8,23 @@ services:
       - "8000:8000"
       - "8501:8501"  # Streamlit port
     volumes:
+      - ./src:/app/src
       - ./data:/app/data
       - ./models:/app/models
-      - ./logs:/app/logs
-      - ./results:/app/results
+      - ./outputs:/app/outputs
+      - ./src/data/runs:/app/src/data/runs
     environment:
       - PYTHONPATH=/app
-      - CUDA_VISIBLE_DEVICES=0  # Use GPU if available
+      - CUDA_VISIBLE_DEVICES=0
+      - PYTHONUNBUFFERED=1
+      - DEBIAN_FRONTEND=noninteractive
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
     restart: unless-stopped
     networks:
       - highway-guardian-network
@@ -36,11 +46,11 @@ services:
   tensorboard:
     build: .
     container_name: highway-guardian-tensorboard
-    command: tensorboard --logdir=/app/logs --host=0.0.0.0 --port=6006
+    command: tensorboard --logdir=/app/src/data/runs --host=0.0.0.0 --port=6006
     ports:
       - "6006:6006"
     volumes:
-      - ./logs:/app/logs
+      - ./src/data/runs:/app/src/data/runs
     restart: unless-stopped
     networks:
       - highway-guardian-network

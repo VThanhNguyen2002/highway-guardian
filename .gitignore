@@ -111,6 +111,9 @@ ENV/
 env.bak/
 venv.bak/
 
+# Kaggle API credentials
+kaggle.json
+
 # Spyder project settings
 .spyderproject
 .spyproject
@@ -170,7 +173,6 @@ models/saved_models/
 logs/
 tensorboard_logs/
 wandb/
-runs/
 outputs/
 
 # Results and experiments

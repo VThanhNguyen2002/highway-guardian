@@ -1,0 +1,146 @@
+# Improved Sign Detection Training Configuration
+# Based on analysis from Car_Traffic_Detection.ipynb
+# Optimized for better performance and class imbalance handling
+
+# Model configuration
+model:
+  name: "yolov8n"  # Start with nano for faster iteration
+  pretrained: true
+  input_channels: 3
+  
+# Dataset configuration
+data:
+  path: "data/traffic_signs"  # Update with actual path
+  train: "images/train"
+  val: "images/val"
+  test: "images/test"
+  nc: 4  # Number of classes (update based on your dataset)
+  expected_classes:
+    - "stop_sign"
+    - "speed_limit"
+    - "warning_sign"
+    - "info_sign"
+  
+# Training configuration
+training:
+  epochs: 200
+  batch_size: 16  # Smaller batch for better gradient updates
+  img_size: 640
+  device: "0"  # GPU device
+  workers: 8
+  cache: true
+  
+  # Optimizer settings
+  optimizer: "AdamW"
+  lr0: 0.001  # Lower learning rate for sign detection
+  lrf: 0.01   # Final learning rate factor
+  momentum: 0.937
+  weight_decay: 0.0005
+  warmup_epochs: 5
+  warmup_momentum: 0.8
+  warmup_bias_lr: 0.1
+  
+  # Loss function weights (optimized for signs)
+  box: 7.5      # Box regression loss weight
+  cls: 0.5      # Classification loss weight
+  dfl: 1.5      # Distribution focal loss weight
+  
+  # Early stopping and checkpointing
+  patience: 30  # Early stopping patience
+  save_period: 5  # Save checkpoint every N epochs
+  
+# Advanced augmentation for sign detection
+augmentation:
+  # Color augmentation (important for traffic signs)
+  hsv_h: 0.02     # Hue shift (fraction)
+  hsv_s: 0.8      # Saturation gain
+  hsv_v: 0.5      # Value (brightness) gain
+  
+  # Geometric augmentation
+  degrees: 15.0   # Image rotation (+/- deg)
+  translate: 0.15 # Image translation (+/- fraction)
+  scale: 0.6      # Image scale (+/- gain)
+  shear: 5.0      # Image shear (+/- deg)
+  perspective: 0.001  # Image perspective (+/- fraction)
+  
+  # Flip augmentation
+  flipud: 0.0     # Image flip up-down (probability)
+  fliplr: 0.3     # Image flip left-right (probability)
+  
+  # Advanced augmentation
+  mosaic: 0.8     # Mosaic augmentation (probability)
+  mixup: 0.1      # MixUp augmentation (probability)
+  copy_paste: 0.1 # Copy-paste augmentation (probability)
+  
+  # Additional augmentation
+  blur: 0.01      # Gaussian blur (probability)
+  noise: 0.02     # Gaussian noise (probability)
+  
+# Validation configuration
+validation:
+  val_period: 1   # Validate every N epochs
+  save_json: true # Save validation results as JSON
+  save_hybrid: true # Save hybrid labels
+  conf_threshold: 0.25  # Confidence threshold
+  iou_threshold: 0.6    # IoU threshold for NMS
+  max_det: 300    # Maximum detections per image
+  
+# Monitoring and logging
+monitoring:
+  wandb:
+    enabled: false  # Set to true to enable W&B
+    project: "highway-guardian-signs"
+    tags: ["yolov8", "traffic-signs", "improved"]
+    notes: "Improved sign detection with weighted loss and advanced augmentation"
+  
+  tensorboard:
+    enabled: true
+    log_dir: "runs/sign_detection"
+  
+# Export configuration
+export:
+  formats: ["onnx", "torchscript", "tflite"]
+  optimize: true
+  half: false  # FP16 quantization
+  dynamic: false  # Dynamic axes
+  simplify: true  # Simplify ONNX model
+  
+# Output configuration
+output:
+  project: "runs/detect"
+  name: "sign_detection_improved"
+  save_dir: ""  # Auto-generated
+  plots: true
+  save_txt: true
+  save_conf: true
+  save_crop: false
+  show_labels: true
+  show_conf: true
+  verbose: true
+  
+# Hardware optimization
+hardware:
+  amp: true       # Automatic Mixed Precision
+  multi_scale: true  # Multi-scale training
+  overlap_mask: true # Overlap masks
+  mask_ratio: 4   # Mask downsample ratio
+  
+# Class-specific settings (for weighted loss)
+class_weights:
+  enabled: true
+  method: "inverse_frequency"  # or "balanced"
+  smooth_factor: 0.1  # Smoothing factor for weights
+  
+# Data loading optimization
+data_loading:
+  pin_memory: true
+  persistent_workers: true
+  prefetch_factor: 2
+  
+# Experimental features
+experimental:
+  focal_loss: true    # Use focal loss for classification
+  label_smoothing: 0.0  # Label smoothing epsilon
+  nbs: 64           # Nominal batch size
+  overlap_mask: true # Overlap masks
+  mask_ratio: 4     # Mask downsample ratio
