@@ -42,21 +42,62 @@ uploaded = files.upload()  # Chọn file kaggle.json
 !kaggle datasets download -d seyeon040768/car-detection-dataset
 !unzip car-detection-dataset.zip -d data/car_detection/
 
-# Tạo file data.yaml cho Colab
-!mkdir -p data/car_detection
-with open('data/car_detection/data.yaml', 'w') as f:
-    f.write('''# Car Detection Dataset Configuration for Colab
-path: /content/highway-guardian/data/car_detection/car_dataset-master
-train: train/images
-val: valid/images
-test: test/images
+# Tạo file config cho Colab
+!mkdir -p configs
+with open('configs/car_detection_colab.yaml', 'w') as f:
+    f.write('''# Car Detection Training Configuration for Colab
+# Dataset: Real Kaggle Car Detection Dataset
 
-# Classes
-nc: 1  # number of classes
-names: ['car']  # class names
+model:
+  weights: 'yolov8n.pt'  # pretrained model
+  architecture: 'yolov8n'
+
+data:
+  path: '/content/highway-guardian/data/car_detection/car_dataset-master'
+  train: 'train/images'
+  val: 'valid/images'
+  test: 'test/images'
+  nc: 1  # number of classes
+  names: ['car']  # class names
+
+training:
+  epochs: 5
+  batch_size: 2
+  image_size: 320
+  device: 'cuda'  # Use GPU on Colab
+  workers: 2
+  optimizer: 'AdamW'
+  lr0: 0.001
+  lrf: 0.01
+  momentum: 0.937
+  weight_decay: 0.0005
+  warmup_epochs: 3
+  box: 7.5
+  cls: 0.5
+  dfl: 1.5
+
+augmentation:
+  hsv_h: 0.015
+  hsv_s: 0.7
+  hsv_v: 0.4
+  degrees: 0.0
+  translate: 0.1
+  scale: 0.5
+  shear: 0.0
+  perspective: 0.0
+  flipud: 0.0
+  fliplr: 0.5
+  mosaic: 1.0
+  mixup: 0.0
+
+validation:
+  save_period: 1
+  patience: 10
+  conf: 0.001
+  iou: 0.6
 ''')
 
-print("✅ Dataset setup completed for Colab!")
+print("✅ Config file created for Colab!")
 ```
 
 ### Option B: Sử dụng Demo Dataset (Nhanh hơn)
@@ -84,8 +125,8 @@ Nếu gặp lỗi về đường dẫn dataset, hãy đảm bảo:
 
 ### Training với Dataset từ Kaggle (Khuyến nghị)
 ```python
-# Chạy training với file data.yaml đã tạo cho Colab
-!python src/training/scripts/train_car_detection.py --data data/car_detection/data.yaml --epochs 5 --batch 2 --imgsz 320
+# Chạy training với config file đã tạo cho Colab
+!python src/training/scripts/train_car_detection.py --config configs/car_detection_colab.yaml
 ```
 
 ### Training nhanh với Demo Dataset
@@ -167,9 +208,13 @@ drive.mount('/content/drive')
 ## 🚨 Troubleshooting
 
 ### ❌ Lỗi Dataset Path (Phổ biến nhất)
-**Triệu chứng:** `Dataset 'xxx/data.yaml' images not found ⚠️, missing path '/content/highway-guardian/datasets/C:/PersonalProject/...'`
+**Triệu chứng:** 
+- `Dataset 'xxx/data.yaml' images not found ⚠️, missing path '/content/highway-guardian/datasets/C:/PersonalProject/...'`
+- `train_car_detection.py: error: the following arguments are required: --config`
 
-**Nguyên nhân:** File data.yaml vẫn chứa đường dẫn Windows local thay vì đường dẫn Colab
+**Nguyên nhân:** 
+1. Script train_car_detection.py chỉ nhận tham số `--config` chứ không nhận `--data`
+2. File config vẫn chứa đường dẫn Windows local thay vì đường dẫn Colab
 
 **Cách khắc phục:**
 ```python
@@ -185,22 +230,32 @@ for root, dirs, files in os.walk("data"):
         for file in files[:3]:  # Show first 3 files
             print(f"{subindent}{file}")
 
-# Bước 2: Tạo lại file data.yaml với đường dẫn đúng
-with open('data/car_detection/data.yaml', 'w') as f:
-    f.write('''# Car Detection Dataset Configuration for Colab
-path: /content/highway-guardian/data/car_detection/car_dataset-master
-train: train/images
-val: valid/images
-test: test/images
+# Bước 2: Tạo file config với đường dẫn đúng cho Colab
+with open('configs/car_detection_colab.yaml', 'w') as f:
+    f.write('''# Car Detection Training Configuration for Colab
+model:
+  weights: 'yolov8n.pt'
+  architecture: 'yolov8n'
 
-# Classes
-nc: 1  # number of classes
-names: ['car']  # class names
+data:
+  path: '/content/highway-guardian/data/car_detection/car_dataset-master'
+  train: 'train/images'
+  val: 'valid/images'
+  test: 'test/images'
+  nc: 1
+  names: ['car']
+
+training:
+  epochs: 5
+  batch_size: 2
+  image_size: 320
+  device: 'cuda'
+  workers: 2
 ''')
 
-# Bước 3: Kiểm tra file data.yaml đã được tạo
-with open('data/car_detection/data.yaml', 'r') as f:
-    print("\n📄 Content of data.yaml:")
+# Bước 3: Kiểm tra file config đã được tạo
+with open('configs/car_detection_colab.yaml', 'r') as f:
+    print("\n📄 Content of car_detection_colab.yaml:")
     print(f.read())
 
 # Bước 4: Kiểm tra đường dẫn dataset có tồn tại không
