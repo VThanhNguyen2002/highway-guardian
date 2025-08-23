@@ -97,7 +97,7 @@ validation:
   iou: 0.6
 
 output:
-  project: 'runs/detect'
+  project: 'runs_detect'
   name: 'car_detection_colab'
   plots: true
   verbose: true
@@ -219,12 +219,14 @@ drive.mount('/content/drive')
 - `train_car_detection.py: error: the following arguments are required: --config`
 - `Training failed: 'output'` (KeyError khi thiếu section output trong config)
 - `Training failed: Invalid CUDA 'device=0' requested. Use 'device=cpu' or pass valid CUDA device(s)` (Lỗi GPU không khả dụng)
+- `Training failed: Invalid project name 'runs/detect': cannot contain characters '/,\\,#,?,%;:' found '/'` (Lỗi tên project không hợp lệ)
 
 **Nguyên nhân:** 
 1. Script train_car_detection.py chỉ nhận tham số `--config` chứ không nhận `--data`
 2. File config vẫn chứa đường dẫn Windows local thay vì đường dẫn Colab
 3. File config thiếu section `output` mà script yêu cầu
 4. Config file đặt device='cuda' nhưng môi trường không có GPU khả dụng
+5. Project name chứa ký tự '/' không được phép trong tên project
 
 **Cách khắc phục:**
 ```python
@@ -292,7 +294,7 @@ validation:
   iou: 0.6
 
 output:
-  project: 'runs/detect'
+  project: 'runs_detect'
   name: 'car_detection_colab'
   plots: true
   verbose: true
@@ -358,6 +360,31 @@ if torch.cuda.is_available():
     print("✅ You can use device: 'cuda'")
 else:
     print("⚠️ Use device: 'cpu' instead")
+```
+
+### ❌ Lỗi Project Name
+**Triệu chứng:** `Training failed: Invalid project name 'runs/detect': cannot contain characters '/,\\,#,?,%;:' found '/'`
+
+**Nguyên nhân:** Project name trong config chứa ký tự '/' không được phép
+
+**Cách khắc phục:**
+```python
+# Sửa project name trong config file
+with open('configs/car_detection_colab.yaml', 'r') as f:
+    content = f.read()
+    
+# Thay thế project name có ký tự không hợp lệ
+content = content.replace("project: 'runs/detect'", "project: 'runs_detect'")
+
+with open('configs/car_detection_colab.yaml', 'w') as f:
+    f.write(content)
+    
+print("✅ Updated project name to use valid characters")
+
+# Kiểm tra config đã được sửa
+with open('configs/car_detection_colab.yaml', 'r') as f:
+    print("📄 Updated config:")
+    print(f.read())
 ```
 
 ## 📋 Checklist hoàn thành
