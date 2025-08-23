@@ -64,7 +64,7 @@ training:
   epochs: 5
   batch_size: 2
   image_size: 320
-  device: 'cuda'  # Use GPU on Colab
+  device: 'cpu'  # Use CPU (change to 'cuda' if GPU available on Colab)
   workers: 2
   optimizer: 'AdamW'
   lr0: 0.001
@@ -218,11 +218,13 @@ drive.mount('/content/drive')
 - `Dataset 'xxx/data.yaml' images not found ⚠️, missing path '/content/highway-guardian/datasets/C:/PersonalProject/...'`
 - `train_car_detection.py: error: the following arguments are required: --config`
 - `Training failed: 'output'` (KeyError khi thiếu section output trong config)
+- `Training failed: Invalid CUDA 'device=0' requested. Use 'device=cpu' or pass valid CUDA device(s)` (Lỗi GPU không khả dụng)
 
 **Nguyên nhân:** 
 1. Script train_car_detection.py chỉ nhận tham số `--config` chứ không nhận `--data`
 2. File config vẫn chứa đường dẫn Windows local thay vì đường dẫn Colab
 3. File config thiếu section `output` mà script yêu cầu
+4. Config file đặt device='cuda' nhưng môi trường không có GPU khả dụng
 
 **Cách khắc phục:**
 ```python
@@ -257,7 +259,7 @@ training:
   epochs: 5
   batch_size: 2
   image_size: 320
-  device: 'cuda'
+  device: 'cpu'  # Use CPU (change to 'cuda' if GPU available on Colab)
   workers: 2
   optimizer: 'AdamW'
   lr0: 0.001
@@ -328,6 +330,34 @@ image_size: 320  # thay vì 640
 # Cài đặt lại packages
 !pip install --upgrade ultralytics
 !pip install --force-reinstall torch torchvision
+```
+
+### ❌ Lỗi CUDA Device
+**Triệu chứng:** `Training failed: Invalid CUDA 'device=0' requested. Use 'device=cpu' or pass valid CUDA device(s)`
+
+**Nguyên nhân:** Config file đặt device='cuda' nhưng môi trường không có GPU khả dụng
+
+**Cách khắc phục:**
+```python
+# Option 1: Sửa config file để dùng CPU
+with open('configs/car_detection_colab.yaml', 'r') as f:
+    content = f.read()
+    
+content = content.replace("device: 'cuda'", "device: 'cpu'")
+
+with open('configs/car_detection_colab.yaml', 'w') as f:
+    f.write(content)
+    
+print("✅ Updated config to use CPU")
+
+# Option 2: Kiểm tra GPU có khả dụng không
+import torch
+print(f"CUDA available: {torch.cuda.is_available()}")
+print(f"CUDA device count: {torch.cuda.device_count()}")
+if torch.cuda.is_available():
+    print("✅ You can use device: 'cuda'")
+else:
+    print("⚠️ Use device: 'cpu' instead")
 ```
 
 ## 📋 Checklist hoàn thành
