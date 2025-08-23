@@ -95,6 +95,12 @@ validation:
   patience: 10
   conf: 0.001
   iou: 0.6
+
+output:
+  project: 'runs/detect'
+  name: 'car_detection_colab'
+  plots: true
+  verbose: true
 ''')
 
 print("✅ Config file created for Colab!")
@@ -211,10 +217,12 @@ drive.mount('/content/drive')
 **Triệu chứng:** 
 - `Dataset 'xxx/data.yaml' images not found ⚠️, missing path '/content/highway-guardian/datasets/C:/PersonalProject/...'`
 - `train_car_detection.py: error: the following arguments are required: --config`
+- `Training failed: 'output'` (KeyError khi thiếu section output trong config)
 
 **Nguyên nhân:** 
 1. Script train_car_detection.py chỉ nhận tham số `--config` chứ không nhận `--data`
 2. File config vẫn chứa đường dẫn Windows local thay vì đường dẫn Colab
+3. File config thiếu section `output` mà script yêu cầu
 
 **Cách khắc phục:**
 ```python
@@ -251,6 +259,41 @@ training:
   image_size: 320
   device: 'cuda'
   workers: 2
+  optimizer: 'AdamW'
+  lr0: 0.001
+  lrf: 0.01
+  momentum: 0.937
+  weight_decay: 0.0005
+  warmup_epochs: 3
+  box: 7.5
+  cls: 0.5
+  dfl: 1.5
+
+augmentation:
+  hsv_h: 0.015
+  hsv_s: 0.7
+  hsv_v: 0.4
+  degrees: 0.0
+  translate: 0.1
+  scale: 0.5
+  shear: 0.0
+  perspective: 0.0
+  flipud: 0.0
+  fliplr: 0.5
+  mosaic: 1.0
+  mixup: 0.0
+
+validation:
+  save_period: 1
+  patience: 10
+  conf: 0.001
+  iou: 0.6
+
+output:
+  project: 'runs/detect'
+  name: 'car_detection_colab'
+  plots: true
+  verbose: true
 ''')
 
 # Bước 3: Kiểm tra file config đã được tạo
