@@ -4,7 +4,7 @@
 
 ```python
 # Clone repository từ GitHub
-!git clone https://github.com/VThanhNguyen2002/highway-guardian.git
+!git clone https://github.com/your-username/highway-guardian.git
 %cd highway-guardian
 ```
 
@@ -36,37 +36,68 @@ uploaded = files.upload()  # Chọn file kaggle.json
 
 ## 📊 Bước 4: Tải Dataset
 
-### Option A: Sử dụng Dataset Manager
-```python
-# Sử dụng script có sẵn
-!python scripts/dataset_manager.py
-```
-
-### Option B: Tải thủ công từ Kaggle
+### Option A: Sử dụng Dataset từ Kaggle (Khuyến nghị)
 ```python
 # Tải dataset car detection
 !kaggle datasets download -d seyeon040768/car-detection-dataset
 !unzip car-detection-dataset.zip -d data/car_detection/
+
+# Tạo file data.yaml cho Colab
+!mkdir -p data/car_detection
+with open('data/car_detection/data.yaml', 'w') as f:
+    f.write('''# Car Detection Dataset Configuration for Colab
+path: /content/highway-guardian/data/car_detection/car_dataset-master
+train: train/images
+val: valid/images
+test: test/images
+
+# Classes
+nc: 1  # number of classes
+names: ['car']  # class names
+''')
+
+print("✅ Dataset setup completed for Colab!")
 ```
 
-### Option C: Sử dụng Demo Dataset
+### Option B: Sử dụng Demo Dataset (Nhanh hơn)
 ```python
 # Tạo demo dataset nhỏ để test nhanh
 !python create_demo_dataset.py
+
+# Demo dataset đã có đường dẫn tương đối, không cần sửa
+print("✅ Demo dataset ready!")
+```
+
+### Option C: Sử dụng Dataset Manager (Tự động)
+```python
+# Sử dụng script có sẵn (cần sửa đường dẫn)
+!python scripts/dataset_manager.py
 ```
 
 ## 🎯 Bước 5: Training Model
 
-### Training với Dataset thực từ Kaggle
+### ⚠️ Lưu ý quan trọng:
+Nếu gặp lỗi về đường dẫn dataset, hãy đảm bảo:
+1. Đã tạo file `data.yaml` với đường dẫn Colab đúng (theo Bước 4)
+2. Dataset đã được tải và giải nén vào đúng thư mục
+3. Sử dụng tham số `--data` để chỉ định file data.yaml mới
+
+### Training với Dataset từ Kaggle (Khuyến nghị)
 ```python
-# Chạy training với cấu hình tối ưu cho Colab
-!python src/training/scripts/train_car_detection.py --config configs/car_detection_real.yaml
+# Chạy training với file data.yaml đã tạo cho Colab
+!python src/training/scripts/train_car_detection.py --data data/car_detection/data.yaml --epochs 5 --batch 2 --imgsz 320
 ```
 
-### Training với Demo Dataset
+### Training nhanh với Demo Dataset
 ```python
-# Training nhanh với demo dataset
+# Training với demo dataset (nhỏ, nhanh)
 !python src/training/scripts/train_car_detection.py --config configs/demo_training_config.yaml
+```
+
+### Training với Config có sẵn (Cần sửa đường dẫn)
+```python
+# Lưu ý: Config này có thể cần sửa đường dẫn dataset
+!python src/training/scripts/train_car_detection.py --config configs/car_detection_real.yaml
 ```
 
 ## 📈 Bước 6: Theo dõi Training
@@ -134,6 +165,51 @@ drive.mount('/content/drive')
 ```
 
 ## 🚨 Troubleshooting
+
+### ❌ Lỗi Dataset Path (Phổ biến nhất)
+**Triệu chứng:** `Dataset 'xxx/data.yaml' images not found ⚠️, missing path '/content/highway-guardian/datasets/C:/PersonalProject/...'`
+
+**Nguyên nhân:** File data.yaml vẫn chứa đường dẫn Windows local thay vì đường dẫn Colab
+
+**Cách khắc phục:**
+```python
+# Bước 1: Kiểm tra cấu trúc dataset hiện tại
+import os
+print("📁 Dataset structure:")
+for root, dirs, files in os.walk("data"):
+    level = root.replace("data", "").count(os.sep)
+    indent = " " * 2 * level
+    print(f"{indent}{os.path.basename(root)}/")
+    if level < 3:  # Chỉ hiển thị 3 level đầu
+        subindent = " " * 2 * (level + 1)
+        for file in files[:3]:  # Show first 3 files
+            print(f"{subindent}{file}")
+
+# Bước 2: Tạo lại file data.yaml với đường dẫn đúng
+with open('data/car_detection/data.yaml', 'w') as f:
+    f.write('''# Car Detection Dataset Configuration for Colab
+path: /content/highway-guardian/data/car_detection/car_dataset-master
+train: train/images
+val: valid/images
+test: test/images
+
+# Classes
+nc: 1  # number of classes
+names: ['car']  # class names
+''')
+
+# Bước 3: Kiểm tra file data.yaml đã được tạo
+with open('data/car_detection/data.yaml', 'r') as f:
+    print("\n📄 Content of data.yaml:")
+    print(f.read())
+
+# Bước 4: Kiểm tra đường dẫn dataset có tồn tại không
+dataset_path = "/content/highway-guardian/data/car_detection/car_dataset-master"
+print(f"\n📍 Dataset path exists: {os.path.exists(dataset_path)}")
+if os.path.exists(dataset_path):
+    print(f"📍 Train images exist: {os.path.exists(os.path.join(dataset_path, 'train/images'))}")
+    print(f"📍 Valid images exist: {os.path.exists(os.path.join(dataset_path, 'valid/images'))}")
+```
 
 ### Lỗi Out of Memory
 ```python
