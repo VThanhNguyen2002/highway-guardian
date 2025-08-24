@@ -21,60 +21,100 @@ if torch.cuda.is_available():
 
 ### Cell 2: Install Required Packages (Offline-Safe)
 ```python
-# Install required packages with offline fallback
+# Install required packages with enhanced offline fallback
 import subprocess
 import sys
 import os
+import time
 
-def install_package_safe(package, fallback_msg=None):
-    """Install package with network error handling for Kaggle offline mode"""
+def install_package_safe(package, timeout=180, fallback_msg=None):
+    """Install package with enhanced network error handling for Kaggle offline mode"""
+    # Check if already installed
     try:
         __import__(package.replace('-', '_'))  # Handle package name differences
         print(f"✅ {package} already available")
         return True
     except ImportError:
+        pass
+    
+    # Try installation with multiple strategies
+    strategies = [
+        ([sys.executable, "-m", "pip", "install", package], timeout),
+        ([sys.executable, "-m", "pip", "install", package, "--no-deps"], 120),
+        ([sys.executable, "-m", "pip", "install", package, "--user"], 90)
+    ]
+    
+    for i, (cmd, cmd_timeout) in enumerate(strategies):
         try:
-            print(f"📦 Installing {package}...")
-            subprocess.check_call([sys.executable, "-m", "pip", "install", package], 
-                                timeout=60)  # Add timeout
-            print(f"✅ {package} installed successfully")
+            strategy_name = ["standard", "no-deps", "user-install"][i]
+            print(f"📦 Installing {package} ({strategy_name})...")
+            
+            subprocess.check_call(cmd, timeout=cmd_timeout)
+            print(f"✅ {package} installed successfully ({strategy_name})")
             return True
-        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
-            print(f"❌ Failed to install {package}: {e}")
-            if fallback_msg:
-                print(f"💡 {fallback_msg}")
-            return False
+            
+        except subprocess.TimeoutExpired:
+            print(f"⏰ Timeout after {cmd_timeout}s ({strategy_name})")
+            if i < len(strategies) - 1:
+                print(f"🔄 Trying next strategy...")
+            continue
+            
+        except subprocess.CalledProcessError as e:
+            print(f"❌ Installation failed ({strategy_name}): {e}")
+            if i < len(strategies) - 1:
+                print(f"🔄 Trying next strategy...")
+            continue
+            
         except Exception as e:
-            print(f"❌ Unexpected error installing {package}: {e}")
-            return False
+            print(f"❌ Unexpected error ({strategy_name}): {e}")
+            continue
+    
+    # All strategies failed
+    print(f"❌ All installation strategies failed for {package}")
+    if fallback_msg:
+        print(f"💡 {fallback_msg}")
+    return False
 
-# Try to install packages with fallbacks
-print("=== PACKAGE INSTALLATION ===")
+# Try to install packages with enhanced fallbacks
+print("=== ENHANCED PACKAGE INSTALLATION ===")
+print("⚠️  Note: Installation may take 3-5 minutes per package")
+print("🌐 Make sure Internet is enabled in Kaggle settings\n")
 
-# Ultralytics - most important
-ultralytics_ok = install_package_safe('ultralytics', 
-    "Fallback: You can manually upload ultralytics wheel file or use pre-installed version")
+# Ultralytics - most important (try longer timeout)
+print("🎯 Installing Ultralytics (critical for YOLO training)...")
+ultralytics_ok = install_package_safe('ultralytics', timeout=300,  # 5 minutes
+    """Fallback options:
+    1. Upload ultralytics wheel file as dataset
+    2. Use YOLOv5 from torch.hub: torch.hub.load('ultralytics/yolov5', 'yolov5s')
+    3. Enable internet and restart notebook""")
 
 # OpenCV - usually available in Kaggle
-opencv_ok = install_package_safe('opencv-python', 
+print("\n🖼️  Installing OpenCV...")
+opencv_ok = install_package_safe('opencv-python', timeout=120,
     "Fallback: OpenCV is usually pre-installed in Kaggle environment")
 
 # Wandb - optional for logging
-wandb_ok = install_package_safe('wandb', 
+print("\n📊 Installing WandB (optional)...")
+wandb_ok = install_package_safe('wandb', timeout=120,
     "Fallback: WandB is optional, training will work without it")
 
-# Check critical packages
+# Final status report
+print("\n" + "="*50)
+print("📊 INSTALLATION SUMMARY")
+print("="*50)
+print(f"  🎯 Ultralytics: {'✅ Ready' if ultralytics_ok else '❌ Failed'}")
+print(f"  🖼️  OpenCV:     {'✅ Ready' if opencv_ok else '❌ Failed'}")
+print(f"  📊 WandB:      {'✅ Ready' if wandb_ok else '❌ Failed'}")
+
 if not ultralytics_ok:
-    print("\n⚠️  WARNING: Ultralytics not available!")
-    print("Solutions:")
-    print("1. Enable internet in Kaggle notebook settings")
-    print("2. Upload ultralytics wheel file as dataset")
-    print("3. Use Kaggle's pre-installed packages")
-    
-print(f"\n📊 Installation Summary:")
-print(f"  Ultralytics: {'✅' if ultralytics_ok else '❌'}")
-print(f"  OpenCV: {'✅' if opencv_ok else '❌'}")
-print(f"  WandB: {'✅' if wandb_ok else '❌'}")
+    print("\n⚠️  CRITICAL: Ultralytics not available!")
+    print("🔧 Quick fixes:")
+    print("   1. Settings → Internet → ON → Restart notebook")
+    print("   2. Try: !pip install ultralytics --no-deps")
+    print("   3. Upload ultralytics wheel file as dataset")
+    print("   4. Use alternative: torch.hub.load('ultralytics/yolov5', 'yolov5s')")
+else:
+    print("\n🎉 All critical packages ready for training!")
 ```
 
 ### Cell 3: Import Libraries (with Error Handling)
@@ -503,35 +543,82 @@ else:
 
 ### Lỗi thường gặp
 
-#### 1. Lỗi kết nối mạng (Network Connection Errors)
+#### 1. Lỗi timeout khi cài đặt Ultralytics
+
+**Triệu chứng:**
+```
+❌ Failed to install ultralytics: Command '[...] timed out after 60 seconds
+WARNING: Retrying (Retry(total=4, connect=None, read=None, redirect=None, status=None)) 
+after connection broken by 'NewConnectionError'...
+```
+
+**Nguyên nhân:**
+- Kết nối mạng chậm hoặc không ổn định
+- Kaggle notebook ở chế độ offline
+- Package ultralytics có dung lượng lớn
+
+**Giải pháp:**
+
+**Option 1: Bật internet và tăng timeout**
+```python
+def install_package_safe(package, timeout=180):  # Tăng timeout lên 3 phút
+    try:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", package], 
+                            timeout=timeout)
+        return True
+    except subprocess.TimeoutExpired:
+        print(f"⏰ Timeout after {timeout}s - trying with --no-deps")
+        try:
+            subprocess.check_call([sys.executable, "-m", "pip", "install", 
+                                 package, "--no-deps"], timeout=120)
+            return True
+        except:
+            return False
+```
+
+**Option 2: Sử dụng pre-installed packages**
+```python
+# Kiểm tra ultralytics có sẵn không
+try:
+    import ultralytics
+    print("✅ Ultralytics available (pre-installed)")
+except ImportError:
+    print("❌ Ultralytics not available")
+    # Fallback to manual installation
+```
+
+**Option 3: Upload wheel file thủ công**
+1. Download `ultralytics-*.whl` từ [PyPI](https://pypi.org/project/ultralytics/#files)
+2. Upload as Kaggle dataset
+3. Install từ local:
+```python
+import os
+wheel_path = "/kaggle/input/ultralytics-wheel/ultralytics-8.0.0-py3-none-any.whl"
+if os.path.exists(wheel_path):
+    !pip install {wheel_path}
+```
+
+#### 2. Lỗi kết nối mạng (Network Connection Errors)
 **Triệu chứng:** `Temporary failure in name resolution`, `NewConnectionError`
 
 **Nguyên nhân:** Kaggle notebook ở chế độ offline hoặc kết nối internet bị hạn chế
 
 **Giải pháp:**
-```python
-# Kiểm tra kết nối internet
-import urllib.request
-
-def check_internet():
-    try:
-        urllib.request.urlopen('http://google.com', timeout=5)
-        return True
-    except:
-        return False
-
-if check_internet():
-    print("✅ Internet available")
-else:
-    print("❌ No internet - using offline mode")
-```
-
-**Các bước khắc phục:**
-1. **Bật Internet trong Kaggle:**
+1. **Kiểm tra và bật internet:**
    - Settings → Internet → ON
    - Restart notebook
+   
+2. **Kiểm tra kết nối:**
+   ```python
+   import requests
+   try:
+       response = requests.get('https://pypi.org', timeout=10)
+       print(f"✅ PyPI accessible (status: {response.status_code})")
+   except Exception as e:
+       print(f"❌ Cannot reach PyPI: {e}")
+   ```
 
-2. **Sử dụng packages có sẵn:**
+3. **Sử dụng packages có sẵn:**
    ```python
    # Kiểm tra packages có sẵn
    import pkg_resources
@@ -539,12 +626,72 @@ else:
    print("Available packages:", sorted(installed))
    ```
 
-3. **Upload wheel files thủ công:**
+4. **Upload wheel files thủ công:**
    - Download `.whl` files locally
    - Upload as dataset
    - Install from local path
 
-#### 2. "Dataset not found"
+#### 2. Lỗi import gói (Package Import Errors)
+
+**Triệu chứng:**
+- `ModuleNotFoundError: No module named 'ultralytics'`
+- `ImportError: cannot import name 'YOLO'`
+
+**Nguyên nhân:**
+- Package chưa được cài đặt hoặc cài đặt thất bại
+- Phiên bản không tương thích
+- Lỗi dependencies
+
+**Giải pháp khi Ultralytics không có:**
+
+**Option 1: Sử dụng YOLOv8 alternative**
+```python
+# Thử các package YOLO khác
+try:
+    # Thử ultralytics trước
+    from ultralytics import YOLO
+    print("✅ Using ultralytics YOLO")
+except ImportError:
+    try:
+        # Fallback: sử dụng yolov5
+        import torch
+        model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
+        print("✅ Using YOLOv5 from torch.hub")
+    except Exception as e:
+        print(f"❌ Cannot load any YOLO model: {e}")
+        print("Please upload ultralytics wheel file manually")
+```
+
+**Option 2: Cài đặt từ GitHub (nếu có internet)**
+```python
+# Cài đặt trực tiếp từ GitHub
+try:
+    !pip install git+https://github.com/ultralytics/ultralytics.git
+    from ultralytics import YOLO
+    print("✅ Installed from GitHub")
+except Exception as e:
+    print(f"❌ GitHub installation failed: {e}")
+```
+
+**Option 3: Sử dụng pre-trained model có sẵn**
+```python
+# Kiểm tra model có sẵn trong Kaggle
+import os
+kaggle_models = [
+    '/kaggle/input/yolov8-models/yolov8n.pt',
+    '/kaggle/input/yolo-models/yolov8s.pt',
+    '/opt/conda/lib/python3.10/site-packages/ultralytics/'
+]
+
+for model_path in kaggle_models:
+    if os.path.exists(model_path):
+        print(f"✅ Found model at: {model_path}")
+        break
+else:
+    print("❌ No pre-trained models found")
+```
+
+#### 3. "Dataset not found"
 **Nguyên nhân**: Chưa add dataset vào notebook
 **Giải pháp**: 
 - Add dataset `seyeon040768/car-detection-dataset`
