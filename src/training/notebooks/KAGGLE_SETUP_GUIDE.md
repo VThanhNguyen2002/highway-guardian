@@ -640,16 +640,52 @@ model = YOLO('best_car_detection_model.pt')
 results = model('path/to/image.jpg')
 ```
 
-## So sánh với Colab
+## So sánh Kaggle vs Google Colab
 
-| Aspect | Colab (TPU) | Kaggle (GPU) |
-|--------|-------------|---------------|
-| **Stability** | ❌ Timeout issues | ✅ Ổn định |
-| **Internet** | ✅ Required | ✅ Offline mode |
-| **Training time** | ❌ Bị dừng ở 97% | ✅ Hoàn thành |
-| **Memory** | ❌ Limited | ✅ Đủ dùng |
-| **Checkpoints** | ❌ Không có | ✅ Auto save |
-| **GPU hours** | ❌ Limited | ✅ 30h/week |
+### Kaggle Accelerator Options
+
+| Accelerator | Miễn phí | Yêu cầu xác thực | Hiệu năng | Giới hạn |
+|-------------|----------|------------------|-----------|----------|
+| **None (CPU)** | ✅ Có | ❌ Không | Thấp | Không giới hạn |
+| **GPU T4 x2** | ✅ Có | ✅ **Phone verification** | Cao | 30h/tuần |
+| **GPU P100** | ✅ Có | ✅ **Phone verification** | Trung bình | 30h/tuần |
+| **TPU VM v3-8** | ✅ Có | ✅ **Phone verification** | Rất cao | 20h/tuần |
+
+### Xác thực tài khoản Kaggle
+
+**Để sử dụng GPU/TPU, bạn PHẢI:**
+1. **Phone Verification**: Xác thực số điện thoại
+2. **Account Settings** → **Phone Verification** → Nhập số điện thoại
+3. Nhận SMS code và xác nhận
+
+**Lưu ý quan trọng:**
+- ⚠️ **CPU (None)** chỉ phù hợp cho testing, không đủ mạnh để train YOLO
+- 🚀 **GPU T4 x2** là lựa chọn tốt nhất cho car detection
+- 📱 **Bắt buộc** phải xác thực phone để dùng GPU/TPU
+
+### So sánh chi tiết
+
+| Tính năng | Kaggle (CPU) | Kaggle (GPU) | Google Colab |
+|-----------|--------------|--------------|-------------|
+| **Yêu cầu xác thực** | ❌ Không | ✅ Phone | ❌ Không |
+| **GPU miễn phí** | ❌ Không | ✅ 30h/tuần T4 | ✅ 12h/ngày (giới hạn) |
+| **Thời gian training** | 🐌 Rất chậm | 🚀 2-3 giờ | 🚀 2-3 giờ |
+| **Thời gian session** | 12 giờ | 12 giờ | 12 giờ (có thể ngắt sớm) |
+| **Dataset** | ✅ Tích hợp | ✅ Tích hợp | ❌ Cần upload |
+| **Internet** | Tùy chọn | Tùy chọn | Luôn có |
+| **Ổn định** | ✅ Cao | ✅ Cao | ⚠️ Trung bình |
+| **Phù hợp cho YOLO** | ❌ Không | ✅ Có | ✅ Có |
+
+### Khuyến nghị
+
+**Nếu chưa xác thực phone:**
+- 🔄 Sử dụng Google Colab cho training
+- 📱 Xác thực phone Kaggle để dùng lâu dài
+
+**Nếu đã xác thực phone:**
+- 🎯 **Kaggle GPU T4 x2** là lựa chọn tốt nhất
+- ⏰ 30h/tuần đủ cho nhiều lần training
+- 🔒 Ổn định hơn Colab, ít bị ngắt session
 
 ## Lưu ý quan trọng
 
