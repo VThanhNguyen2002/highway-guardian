@@ -19,43 +19,129 @@ if torch.cuda.is_available():
     print(f"GPU memory: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB")
 ```
 
-### Cell 2: Install Required Packages
+### Cell 2: Install Required Packages (Offline-Safe)
 ```python
-# Install required packages (if not available)
+# Install required packages with offline fallback
 import subprocess
 import sys
+import os
 
-def install_package(package):
+def install_package_safe(package, fallback_msg=None):
+    """Install package with network error handling for Kaggle offline mode"""
     try:
-        __import__(package)
-        print(f"{package} already installed")
+        __import__(package.replace('-', '_'))  # Handle package name differences
+        print(f"✅ {package} already available")
+        return True
     except ImportError:
-        print(f"Installing {package}...")
-        subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+        try:
+            print(f"📦 Installing {package}...")
+            subprocess.check_call([sys.executable, "-m", "pip", "install", package], 
+                                timeout=60)  # Add timeout
+            print(f"✅ {package} installed successfully")
+            return True
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
+            print(f"❌ Failed to install {package}: {e}")
+            if fallback_msg:
+                print(f"💡 {fallback_msg}")
+            return False
+        except Exception as e:
+            print(f"❌ Unexpected error installing {package}: {e}")
+            return False
 
-# Install ultralytics if not available
-install_package('ultralytics')
-install_package('opencv-python')
-install_package('wandb')
+# Try to install packages with fallbacks
+print("=== PACKAGE INSTALLATION ===")
+
+# Ultralytics - most important
+ultralytics_ok = install_package_safe('ultralytics', 
+    "Fallback: You can manually upload ultralytics wheel file or use pre-installed version")
+
+# OpenCV - usually available in Kaggle
+opencv_ok = install_package_safe('opencv-python', 
+    "Fallback: OpenCV is usually pre-installed in Kaggle environment")
+
+# Wandb - optional for logging
+wandb_ok = install_package_safe('wandb', 
+    "Fallback: WandB is optional, training will work without it")
+
+# Check critical packages
+if not ultralytics_ok:
+    print("\n⚠️  WARNING: Ultralytics not available!")
+    print("Solutions:")
+    print("1. Enable internet in Kaggle notebook settings")
+    print("2. Upload ultralytics wheel file as dataset")
+    print("3. Use Kaggle's pre-installed packages")
+    
+print(f"\n📊 Installation Summary:")
+print(f"  Ultralytics: {'✅' if ultralytics_ok else '❌'}")
+print(f"  OpenCV: {'✅' if opencv_ok else '❌'}")
+print(f"  WandB: {'✅' if wandb_ok else '❌'}")
 ```
 
-### Cell 3: Import Libraries
+### Cell 3: Import Libraries (with Error Handling)
 ```python
 import os
-import yaml
+import sys
 import shutil
 from pathlib import Path
 import matplotlib.pyplot as plt
 from IPython.display import Image, display
-
-from ultralytics import YOLO
-import torch
-import cv2
 import numpy as np
 
+# Import with error handling
+try:
+    import yaml
+except ImportError:
+    print("⚠️ PyYAML not available, using basic dict for config")
+    yaml = None
+
+try:
+    from ultralytics import YOLO
+    ULTRALYTICS_AVAILABLE = True
+    print("✅ Ultralytics imported successfully")
+except ImportError as e:
+    print(f"❌ Ultralytics import failed: {e}")
+    print("💡 Please check package installation or enable internet")
+    ULTRALYTICS_AVAILABLE = False
+    YOLO = None
+
+try:
+    import torch
+    TORCH_AVAILABLE = True
+    print(f"✅ PyTorch {torch.__version__} available")
+except ImportError:
+    print("❌ PyTorch not available")
+    TORCH_AVAILABLE = False
+    torch = None
+
+try:
+    import cv2
+    CV2_AVAILABLE = True
+    print(f"✅ OpenCV {cv2.__version__} available")
+except ImportError:
+    print("❌ OpenCV not available")
+    CV2_AVAILABLE = False
+    cv2 = None
+
 # Set device
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
-print(f"Using device: {device}")
+if TORCH_AVAILABLE:
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    print(f"🖥️ Using device: {device}")
+    if torch.cuda.is_available():
+        print(f"🚀 GPU: {torch.cuda.get_device_name(0)}")
+else:
+    device = 'cpu'
+    print("⚠️ PyTorch not available, defaulting to CPU")
+
+# Check critical dependencies
+print("\n📋 Dependency Check:")
+print(f"  PyTorch: {'✅' if TORCH_AVAILABLE else '❌'}")
+print(f"  Ultralytics: {'✅' if ULTRALYTICS_AVAILABLE else '❌'}")
+print(f"  OpenCV: {'✅' if CV2_AVAILABLE else '❌'}")
+print(f"  PyYAML: {'✅' if yaml else '❌'}")
+
+if not ULTRALYTICS_AVAILABLE:
+    print("\n🛑 CRITICAL: Cannot proceed without Ultralytics!")
+    print("Please resolve package installation issues before continuing.")
 ```
 
 ### Cell 4: Dataset Setup - Check Dataset
@@ -417,13 +503,54 @@ else:
 
 ### Lỗi thường gặp
 
-#### 1. "Dataset not found"
+#### 1. Lỗi kết nối mạng (Network Connection Errors)
+**Triệu chứng:** `Temporary failure in name resolution`, `NewConnectionError`
+
+**Nguyên nhân:** Kaggle notebook ở chế độ offline hoặc kết nối internet bị hạn chế
+
+**Giải pháp:**
+```python
+# Kiểm tra kết nối internet
+import urllib.request
+
+def check_internet():
+    try:
+        urllib.request.urlopen('http://google.com', timeout=5)
+        return True
+    except:
+        return False
+
+if check_internet():
+    print("✅ Internet available")
+else:
+    print("❌ No internet - using offline mode")
+```
+
+**Các bước khắc phục:**
+1. **Bật Internet trong Kaggle:**
+   - Settings → Internet → ON
+   - Restart notebook
+
+2. **Sử dụng packages có sẵn:**
+   ```python
+   # Kiểm tra packages có sẵn
+   import pkg_resources
+   installed = [d.project_name for d in pkg_resources.working_set]
+   print("Available packages:", sorted(installed))
+   ```
+
+3. **Upload wheel files thủ công:**
+   - Download `.whl` files locally
+   - Upload as dataset
+   - Install from local path
+
+#### 2. "Dataset not found"
 **Nguyên nhân**: Chưa add dataset vào notebook
 **Giải pháp**: 
 - Add dataset `seyeon040768/car-detection-dataset`
 - Kiểm tra path `/kaggle/input/car-detection-dataset`
 
-#### 2. "CUDA out of memory"
+#### 3. "CUDA out of memory"
 **Nguyên nhân**: Batch size quá lớn
 **Giải pháp**:
 ```python
@@ -431,7 +558,7 @@ else:
 train_params['batch'] = 8  # thay vì 16
 ```
 
-#### 3. "Training timeout"
+#### 4. "Training timeout"
 **Nguyên nhân**: Kaggle session timeout (9 giờ)
 **Giải pháp**:
 ```python
@@ -439,10 +566,26 @@ train_params['batch'] = 8  # thay vì 16
 train_params['epochs'] = 20  # thay vì 30
 ```
 
-#### 4. "No GPU available"
+#### 5. "No GPU available"
 **Nguyên nhân**: Chưa bật GPU trong settings
 **Giải pháp**:
 - Settings → Accelerator → GPU T4 x2
+
+#### 6. Package import errors
+**Ultralytics không import được:**
+```python
+# Fallback: Sử dụng YOLOv5 thay thế
+!git clone https://github.com/ultralytics/yolov5
+sys.path.append('/kaggle/working/yolov5')
+from models.experimental import attempt_load
+```
+
+**OpenCV không có:**
+```python
+# Fallback: Sử dụng PIL
+from PIL import Image
+import matplotlib.image as mpimg
+```
 
 ### Performance Tips
 
