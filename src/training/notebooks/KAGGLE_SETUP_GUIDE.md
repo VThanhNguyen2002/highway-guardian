@@ -322,6 +322,12 @@ for key, value in train_params.items():
 
 ### Cell 9: Start Training
 ```python
+# Tự động disable WandB để tránh phải nhập thủ công
+import os
+os.environ['WANDB_MODE'] = 'disabled'  # Tự động chọn option 3: Don't visualize my results
+os.environ['WANDB_DISABLED'] = 'true'   # Backup disable
+print("✅ WandB đã được tự động disable")
+
 # Start training with error handling
 try:
     print("Starting training...")
@@ -849,6 +855,70 @@ Nếu gặp vấn đề, hãy kiểm tra:
 2. Dataset đã add chưa
 3. Error messages trong output
 4. Kaggle GPU quota còn lại
+
+## 🔧 Giải pháp tự động cho WandB prompt
+
+### Vấn đề: WandB yêu cầu nhập thủ công
+
+Khi chạy training, WandB sẽ hiển thị prompt:
+```
+wandb: (1) Create a W&B account
+wandb: (2) Use an existing W&B account  
+wandb: (3) Don't visualize my results
+wandb: Enter your choice:
+```
+
+### Giải pháp: Tự động disable WandB
+
+Thêm code này **TRƯỚC KHI** chạy training:
+
+```python
+# Tự động disable WandB để tránh phải nhập thủ công
+import os
+os.environ['WANDB_MODE'] = 'disabled'  # Tự động chọn option 3: Don't visualize my results
+os.environ['WANDB_DISABLED'] = 'true'   # Backup disable
+print("✅ WandB đã được tự động disable")
+```
+
+### Script hoàn chỉnh với auto-disable WandB
+
+File `kaggle_training_script.py` đã được tạo với code hoàn chỉnh bao gồm:
+- ✅ Tự động disable WandB
+- ✅ Auto-detect dataset structure
+- ✅ Patch config file
+- ✅ Chạy training
+
+**Cách sử dụng:**
+1. Copy nội dung từ `kaggle_training_script.py`
+2. Paste vào Kaggle notebook
+3. Chạy từng cell hoặc chạy toàn bộ
+4. Không cần nhập thủ công WandB options!
+
+### Code gốc của bạn (đã cải tiến)
+
+```python
+# 1) Tự động disable WandB TRƯỚC KHI training
+import os
+os.environ['WANDB_MODE'] = 'disabled'
+os.environ['WANDB_DISABLED'] = 'true'
+print("✅ WandB auto-disabled")
+
+# 2) Đứng đúng thư mục dự án
+%cd /kaggle/working/highway-guardian
+
+# 3) (Nếu chưa giải nén) Giải nén dataset vào data/car_detection
+!mkdir -p data/car_detection
+!unzip -o car-detection-dataset.zip -d data/car_detection > /dev/null
+
+# 4) Kiểm tra nhanh cấu trúc
+!find data/car_detection -maxdepth 3 -type d | sort | sed -n '1,120p'
+
+# 5) Auto-detect dataset root và patch configs/car_detection_colab.yaml
+# ... (code của bạn giữ nguyên)
+
+# 6) Chạy training - giờ sẽ không bị hỏi WandB nữa!
+!python src/training/scripts/train_car_detection.py --config configs/car_detection_colab.yaml
+```
 
 ---
 
