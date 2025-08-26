@@ -856,6 +856,64 @@ Nếu gặp vấn đề, hãy kiểm tra:
 3. Error messages trong output
 4. Kaggle GPU quota còn lại
 
+## 🌐 Setup với Internet ON (Online Mode)
+
+### Lợi ích của Internet Mode:
+- ✅ Cài đặt packages mới nhất từ PyPI
+- ✅ Enable WandB logging và visualization
+- ✅ Download datasets từ Kaggle API
+- ✅ Sử dụng cache để tăng tốc training
+- ✅ Tăng workers và epochs cho performance tốt hơn
+
+### Script hoàn chỉnh với Internet ON:
+
+File `kaggle_training_script_online.py` đã được tạo với:
+- 🌐 **Internet enabled** - cài đặt packages từ PyPI
+- 🔧 **WandB configurable** - có thể enable/disable
+- 📦 **Auto dataset detection** - từ Kaggle Input hoặc API
+- 🚀 **Optimized training** - cache enabled, more workers
+- 📊 **Full validation** - metrics và visualizations
+
+### Cách sử dụng Internet Mode:
+
+1. **Bật Internet trong Kaggle:**
+   - Settings → Internet → ON
+   
+2. **Copy script:**
+   ```python
+   # Copy nội dung từ kaggle_training_script_online.py
+   ```
+
+3. **Cấu hình WandB:**
+   ```python
+   WANDB_MODE = "disabled"  # Hoặc "online" nếu có account
+   ```
+
+4. **Chạy training:**
+   - Script sẽ tự động cài đặt packages
+   - Auto-detect dataset structure
+   - Training với full features
+
+### So sánh Online vs Offline Mode:
+
+| Tính năng | Offline Mode | Online Mode |
+|-----------|--------------|-------------|
+| Internet | ❌ Không cần | ✅ Bắt buộc |
+| Package install | ⚠️ Pre-installed only | ✅ Latest từ PyPI |
+| WandB logging | ❌ Disabled | ✅ Configurable |
+| Dataset source | 📁 Kaggle Input only | 📁 Input + 🌐 API |
+| Cache | ❌ Disabled | ✅ Enabled |
+| Workers | 2 (limited) | 4 (optimized) |
+| Epochs | 30 (reduced) | 50 (full) |
+| Performance | 🐌 Basic | 🚀 Optimized |
+
+### Khuyến nghị sử dụng:
+
+- **Offline Mode**: Khi muốn training nhanh, không cần logging chi tiết
+- **Online Mode**: Khi cần full features, WandB tracking, performance tối ưu
+
+---
+
 ## 🔧 Giải pháp tự động cho WandB prompt
 
 ### Vấn đề: WandB yêu cầu nhập thủ công
