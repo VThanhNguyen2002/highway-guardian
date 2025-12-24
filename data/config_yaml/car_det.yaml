@@ -1,0 +1,6 @@
+names:
+  0: "xe \xF4-t\xF4"
+path: /content/car-detection-datasets/car_dataset-master
+test: test/images
+train: train/images
+val: valid/images

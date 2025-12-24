@@ -104,6 +104,8 @@ celerybeat.pid
 
 # Environments
 .env
+.env.local
+.env.*.local
 .venv
 env/
 venv/
@@ -111,8 +113,15 @@ ENV/
 env.bak/
 venv.bak/
 
+<<<<<<< HEAD
 # Kaggle API credentials
 kaggle.json
+=======
+# Frontend environment
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+>>>>>>> d56d32b (Changed: Finish UI and main function in this project)
 
 # Spyder project settings
 .spyderproject
@@ -176,12 +185,10 @@ wandb/
 outputs/
 
 # Results and experiments
-results/
 experiments/
 artifacts/
 
 # Large files
-*.zip
 *.tar.gz
 *.rar
 *.7z
@@ -288,3 +295,56 @@ ray_results/
 
 # Keep empty directories
 !.gitkeep
+
+# Node modules
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Firebase
+firebase-debug.log
+.firebase/
+firestore-debug.log
+ui-debug.log
+
+# Secrets and credentials
+*.key
+*.pem
+secrets/
+credentials/
+config/secrets.yaml
+config/local.yaml
+.secrets
+
+# Test files
+test_images/
+test_videos/
+*.test.jpg
+*.test.png
+
+# Backup files
+*.backup
+*.bak
+*~
+
+# IDE
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Documentation builds
+docs/_build/
+site/

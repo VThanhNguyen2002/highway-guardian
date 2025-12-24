@@ -1,0 +1,12 @@
+# frontend/.gitignore
+
+# Môi trường
+.env
+.env.*
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+
+# Dependencies
+/node_modules

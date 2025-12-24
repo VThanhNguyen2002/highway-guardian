@@ -1,0 +1,30 @@
+# Web Framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+
+# --- CORE AI: PHIÊN BẢN CPU (SIÊU NHẸ) ---
+
+# 1. PyTorch CPU (Thêm dòng index-url này là quan trọng nhất)
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.5.1
+torchvision==0.20.1
+torchaudio==2.5.1
+
+# 2. TensorFlow CPU
+# tensorflow-cpu nhẹ hơn bản thường khoảng 1-2GB vì không chứa CUDA
+tensorflow-cpu==2.15.0
+keras==2.15.0
+tf_keras==2.15.0
+
+# ----------------------------------------
+
+# ML/AI Libraries
+ultralytics==8.0.196
+# Dùng opencv-headless (bỏ phần GUI) để nhẹ hơn
+opencv-python-headless==4.8.1.78
+
+# Image Processing & Utils
+Pillow==10.1.0
+numpy==1.26.4
+pydantic==2.5.0

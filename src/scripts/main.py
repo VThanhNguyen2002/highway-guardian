@@ -1,265 +1,174 @@
-#!/usr/bin/env python3
 """
-Highway Guardian - Main Application Entry Point
-
-Hệ thống nhận diện biển báo giao thông và phân loại xe
-Sử dụng CNN và YOLOv8 cho detection và classification
-
-Author: VThanhNguyen2002
-Date: 2025
+Highway Guardian API - Main Application
+WebSocket support for real-time camera detection
 """
-
 import os
-import sys
-import argparse
-import logging
-from pathlib import Path
+os.environ["TF_USE_LEGACY_KERAS"] = "1"
 
-# Add src to Python path
-sys.path.append(str(Path(__file__).parent))
+import io
+import traceback
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
+from PIL import Image
 
-from utils.logger import setup_logger
-from utils.config import load_config
-from detection.traffic_sign_detector import TrafficSignDetector
-from detection.vehicle_detector import VehicleDetector
-from classification.sign_classifier import SignClassifier
-from classification.vehicle_classifier import VehicleClassifier
+from config.settings import (
+    API_TITLE, API_VERSION, CORS_ORIGINS,
+    YOLO_MODELS_DIR, CNN_MODELS_DIR,
+    DEFAULT_CONFIDENCE_THRESHOLD, API_HOST, API_PORT
+)
+from services.detection_service import (
+    yolo_predict, cnn_predict, two_stage_predict
+)
+from utils.model_manager import get_available_models
 
+# ============================================================================
+# WEBSOCKET CONFIG - Hardcoded model names for real-time detection
+# ============================================================================
+WS_YOLO_MODEL = "best.pt"
+WS_CNN_MODEL = "bien_bao_mobilenetv2_AUGMENTED_BALANCED_model.h5"
+WS_CONFIDENCE_THRESHOLD = 0.25
 
-def parse_arguments():
-    """Parse command line arguments"""
-    parser = argparse.ArgumentParser(
-        description="Highway Guardian - Traffic Sign and Vehicle Detection System"
-    )
-    
-    parser.add_argument(
-        "--mode",
-        choices=["train", "inference", "evaluate", "demo"],
-        default="demo",
-        help="Operation mode"
-    )
-    
-    parser.add_argument(
-        "--model",
-        choices=["traffic_signs", "vehicles", "both"],
-        default="both",
-        help="Model type to use"
-    )
-    
-    parser.add_argument(
-        "--input",
-        type=str,
-        help="Input image/video path or camera index (0 for webcam)"
-    )
-    
-    parser.add_argument(
-        "--output",
-        type=str,
-        default="results",
-        help="Output directory for results"
-    )
-    
-    parser.add_argument(
-        "--config",
-        type=str,
-        default="config/config.yaml",
-        help="Configuration file path"
-    )
-    
-    parser.add_argument(
-        "--weights",
-        type=str,
-        help="Model weights path"
-    )
-    
-    parser.add_argument(
-        "--confidence",
-        type=float,
-        default=0.5,
-        help="Confidence threshold for detection"
-    )
-    
-    parser.add_argument(
-        "--device",
-        choices=["cpu", "cuda", "auto"],
-        default="auto",
-        help="Device to use for inference"
-    )
-    
-    parser.add_argument(
-        "--verbose",
-        action="store_true",
-        help="Enable verbose logging"
-    )
-    
-    return parser.parse_args()
+# ============================================================================
+# LIFESPAN
+# ============================================================================
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("\n" + "="*50)
+    print("🚀 STARTUP CHECK: Checking Models...")
+    if os.path.exists(YOLO_MODELS_DIR):
+        print(f"✅ YOLO Directory: {os.listdir(YOLO_MODELS_DIR)}")
+    if os.path.exists(CNN_MODELS_DIR):
+        print(f"✅ CNN Directory: {os.listdir(CNN_MODELS_DIR)}")
+    print(f"📡 WebSocket models: YOLO={WS_YOLO_MODEL}, CNN={WS_CNN_MODEL}")
+    print("="*50 + "\n")
+    yield
+    print("🛑 Server shutting down...")
 
+# ============================================================================
+# APP INITIALIZATION
+# ============================================================================
+app = FastAPI(title=API_TITLE, version=API_VERSION, lifespan=lifespan)
 
-def setup_environment(args):
-    """Setup logging and environment"""
-    # Setup logging
-    log_level = logging.DEBUG if args.verbose else logging.INFO
-    logger = setup_logger("highway_guardian", level=log_level)
-    
-    # Create output directory
-    os.makedirs(args.output, exist_ok=True)
-    
-    # Load configuration
-    config = load_config(args.config)
-    
-    return logger, config
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
+# ============================================================================
+# HTTP ENDPOINTS (Existing)
+# ============================================================================
+@app.get("/")
+def read_root():
+    return {"status": "running", "service": API_TITLE}
 
-def initialize_models(config, args):
-    """Initialize detection and classification models"""
-    models = {}
-    
-    if args.model in ["traffic_signs", "both"]:
-        # Initialize traffic sign detector and classifier
-        models["traffic_sign_detector"] = TrafficSignDetector(
-            weights_path=args.weights or config.get("traffic_signs", {}).get("detector_weights"),
-            device=args.device,
-            confidence=args.confidence
-        )
-        
-        models["sign_classifier"] = SignClassifier(
-            weights_path=config.get("traffic_signs", {}).get("classifier_weights"),
-            device=args.device
-        )
-    
-    if args.model in ["vehicles", "both"]:
-        # Initialize vehicle detector and classifier
-        models["vehicle_detector"] = VehicleDetector(
-            weights_path=args.weights or config.get("vehicles", {}).get("detector_weights"),
-            device=args.device,
-            confidence=args.confidence
-        )
-        
-        models["vehicle_classifier"] = VehicleClassifier(
-            weights_path=config.get("vehicles", {}).get("classifier_weights"),
-            device=args.device
-        )
-    
-    return models
+@app.get("/models")
+def get_models():
+    return get_available_models(YOLO_MODELS_DIR, CNN_MODELS_DIR)
 
-
-def run_training(args, config, models, logger):
-    """Run training mode"""
-    logger.info("Starting training mode...")
-    
-    if args.model == "traffic_signs":
-        from training.train_traffic_signs import train_traffic_signs
-        train_traffic_signs(config, args.output)
-    
-    elif args.model == "vehicles":
-        from training.train_vehicles import train_vehicles
-        train_vehicles(config, args.output)
-    
-    elif args.model == "both":
-        from training.train_traffic_signs import train_traffic_signs
-        from training.train_vehicles import train_vehicles
-        
-        logger.info("Training traffic signs model...")
-        train_traffic_signs(config, args.output)
-        
-        logger.info("Training vehicles model...")
-        train_vehicles(config, args.output)
-    
-    logger.info("Training completed!")
-
-
-def run_inference(args, config, models, logger):
-    """Run inference mode"""
-    logger.info(f"Starting inference on: {args.input}")
-    
-    from inference.predictor import Predictor
-    
-    predictor = Predictor(models, config)
-    results = predictor.predict(args.input, args.output)
-    
-    logger.info(f"Inference completed. Results saved to: {args.output}")
-    return results
-
-
-def run_evaluation(args, config, models, logger):
-    """Run evaluation mode"""
-    logger.info("Starting evaluation mode...")
-    
-    from evaluation.evaluator import Evaluator
-    
-    evaluator = Evaluator(models, config)
-    metrics = evaluator.evaluate(args.input, args.output)
-    
-    logger.info("Evaluation completed!")
-    logger.info(f"Results: {metrics}")
-    
-    return metrics
-
-
-def run_demo(args, config, models, logger):
-    """Run demo mode with web interface"""
-    logger.info("Starting demo mode...")
-    
+@app.post("/predict")
+async def predict(model_name: str = Form(...), model_type: str = Form("yolo"), file: UploadFile = File(...)):
     try:
-        from demo.web_app import create_app
-        app = create_app(models, config)
+        contents = await file.read()
+        image = Image.open(io.BytesIO(contents))
         
-        import uvicorn
-        uvicorn.run(app, host="0.0.0.0", port=8000)
+        if model_type == "yolo":
+            predictions = yolo_predict(image, model_name, YOLO_MODELS_DIR)
+        elif model_type == "cnn":
+            prediction = cnn_predict(image, model_name, CNN_MODELS_DIR)
+            predictions = [prediction]
+        else:
+            raise HTTPException(status_code=400, detail="Invalid model type")
         
-    except ImportError:
-        logger.warning("Web dependencies not available. Running CLI demo...")
-        
-        from demo.cli_demo import run_cli_demo
-        run_cli_demo(models, config, args.input or 0)
-
-
-def main():
-    """Main application entry point"""
-    try:
-        # Parse arguments
-        args = parse_arguments()
-        
-        # Setup environment
-        logger, config = setup_environment(args)
-        
-        logger.info("Highway Guardian - Traffic Sign and Vehicle Detection System")
-        logger.info(f"Mode: {args.mode}")
-        logger.info(f"Model: {args.model}")
-        logger.info(f"Device: {args.device}")
-        
-        # Initialize models
-        models = initialize_models(config, args)
-        
-        # Run based on mode
-        if args.mode == "train":
-            run_training(args, config, models, logger)
-        
-        elif args.mode == "inference":
-            if not args.input:
-                raise ValueError("Input path is required for inference mode")
-            run_inference(args, config, models, logger)
-        
-        elif args.mode == "evaluate":
-            if not args.input:
-                raise ValueError("Input path is required for evaluation mode")
-            run_evaluation(args, config, models, logger)
-        
-        elif args.mode == "demo":
-            run_demo(args, config, models, logger)
-        
-        logger.info("Application completed successfully!")
-        
-    except KeyboardInterrupt:
-        logger.info("Application interrupted by user")
-        sys.exit(0)
-    
+        return {"predictions": predictions, "success": True}
     except Exception as e:
-        logger.error(f"Application error: {str(e)}")
-        if args.verbose:
-            logger.exception("Full traceback:")
-        sys.exit(1)
+        traceback.print_exc()
+        return {"error": str(e), "predictions": [], "success": False}
 
+@app.post("/predict_two_stage")
+async def predict_two_stage_endpoint(yolo_model: str = Form(...), cnn_model: str = Form(...), 
+                                   file: UploadFile = File(...), confidence_threshold: float = Form(DEFAULT_CONFIDENCE_THRESHOLD)):
+    try:
+        contents = await file.read()
+        image = Image.open(io.BytesIO(contents))
+        predictions = two_stage_predict(image, yolo_model, cnn_model, YOLO_MODELS_DIR, CNN_MODELS_DIR, confidence_threshold)
+        return {"predictions": predictions, "success": True}
+    except Exception as e:
+        traceback.print_exc()
+        return {"error": str(e), "predictions": [], "success": False}
 
+# ============================================================================
+# WEBSOCKET ENDPOINT - Real-time Camera Detection
+# ============================================================================
+@app.websocket("/ws/predict")
+async def websocket_predict(websocket: WebSocket):
+    """
+    WebSocket endpoint for real-time camera detection.
+    
+    Protocol:
+    - Client sends: raw image bytes (JPEG/PNG)
+    - Server responds: JSON with predictions
+    
+    Uses hardcoded models for consistent performance.
+    """
+    await websocket.accept()
+    print(f"📡 WebSocket connected: {websocket.client}")
+    
+    frame_count = 0
+    
+    try:
+        while True:
+            # Receive raw image bytes from client
+            data = await websocket.receive_bytes()
+            frame_count += 1
+            
+            try:
+                # Convert bytes to PIL Image
+                image = Image.open(io.BytesIO(data))
+                
+                # Convert to RGB if needed (handle PNG with alpha channel)
+                if image.mode != 'RGB':
+                    image = image.convert('RGB')
+                
+                # Run two-stage prediction (YOLO + CNN)
+                predictions = two_stage_predict(
+                    image=image,
+                    yolo_model_name=WS_YOLO_MODEL,
+                    cnn_model_name=WS_CNN_MODEL,
+                    yolo_dir=YOLO_MODELS_DIR,
+                    cnn_dir=CNN_MODELS_DIR,
+                    conf_threshold=WS_CONFIDENCE_THRESHOLD
+                )
+                
+                # Send results back to client
+                await websocket.send_json({
+                    "success": True,
+                    "predictions": predictions,
+                    "frame": frame_count
+                })
+                
+            except Exception as e:
+                # Send error but keep connection alive
+                print(f"⚠️ Frame {frame_count} error: {str(e)}")
+                await websocket.send_json({
+                    "success": False,
+                    "error": str(e),
+                    "predictions": [],
+                    "frame": frame_count
+                })
+                
+    except WebSocketDisconnect:
+        print(f"📴 WebSocket disconnected: {websocket.client} (processed {frame_count} frames)")
+    except Exception as e:
+        print(f"❌ WebSocket error: {str(e)}")
+        traceback.print_exc()
+
+# ============================================================================
+# MAIN
+# ============================================================================
 if __name__ == "__main__":
-    main()
+    import uvicorn
+    uvicorn.run("main:app", host=API_HOST, port=API_PORT, reload=True)

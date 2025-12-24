@@ -1,56 +1,30 @@
-version: '3.8'
-
 services:
-  highway-guardian:
-    build: .
-    container_name: highway-guardian-app
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: highway-guardian-backend
     ports:
       - "8000:8000"
-      - "8501:8501"  # Streamlit port
     volumes:
-      - ./src:/app/src
-      - ./data:/app/data
       - ./models:/app/models
-      - ./outputs:/app/outputs
-      - ./src/data/runs:/app/src/data/runs
+      - ./src:/app/src
     environment:
-      - PYTHONPATH=/app
-      - CUDA_VISIBLE_DEVICES=0
       - PYTHONUNBUFFERED=1
-      - DEBIAN_FRONTEND=noninteractive
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+      - TF_USE_LEGACY_KERAS=1
     restart: unless-stopped
     networks:
       - highway-guardian-network
 
-  jupyter:
-    build: .
-    container_name: highway-guardian-jupyter
-    command: jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root --NotebookApp.token=''
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: highway-guardian-frontend
     ports:
-      - "8888:8888"
-    volumes:
-      - ./:/app
-    environment:
-      - PYTHONPATH=/app
-    restart: unless-stopped
-    networks:
-      - highway-guardian-network
-
-  tensorboard:
-    build: .
-    container_name: highway-guardian-tensorboard
-    command: tensorboard --logdir=/app/src/data/runs --host=0.0.0.0 --port=6006
-    ports:
-      - "6006:6006"
-    volumes:
-      - ./src/data/runs:/app/src/data/runs
+      - "8080:80"
+    depends_on:
+      - backend
     restart: unless-stopped
     networks:
       - highway-guardian-network
@@ -58,9 +32,3 @@ services:
 networks:
   highway-guardian-network:
     driver: bridge
-
-volumes:
-  data:
-  models:
-  logs:
-  results:
