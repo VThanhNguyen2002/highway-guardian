@@ -429,8 +429,12 @@ function clearCanvas() {
 
 .image-container {
   position: relative;
-  width: 100%;
-  aspect-ratio: 16 / 9;
+  width: fit-content; /* Shrink to fit image */
+  margin: 0 auto;     /* Center horizontally */
+  min-width: 300px;
+  min-height: 200px;
+  max-height: 80vh;
+  max-width: 100%;    /* Don't overflow screen */
   background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%);
   border: 2px solid #e2e8f0;
   border-radius: 12px;

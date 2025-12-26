@@ -78,8 +78,16 @@ async def predict(model_name: str = Form(...), model_type: str = Form("yolo"), f
         if model_type == "yolo":
             predictions = yolo_predict(image, model_name, YOLO_MODELS_DIR)
         elif model_type == "cnn":
-            prediction = cnn_predict(image, model_name, CNN_MODELS_DIR)
-            predictions = [prediction]
+            # IMPROVEMENT: Use Two-Stage Detection (YOLO finds signs -> CNN classifies them)
+            # We use the default/best YOLO model for the detection stage
+            default_yolo = "best.pt" 
+            predictions = two_stage_predict(
+                image, 
+                yolo_model_name=default_yolo, 
+                cnn_model_name=model_name,
+                yolo_dir=YOLO_MODELS_DIR,
+                cnn_dir=CNN_MODELS_DIR
+            )
         else:
             raise HTTPException(status_code=400, detail="Invalid model type")
         
