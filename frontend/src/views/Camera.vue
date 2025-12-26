@@ -557,11 +557,13 @@ button:disabled {
 
 .video-wrapper {
     position: relative;
-    background: #1a202c;
+    background: #000;
     border-radius: 12px;
     overflow: hidden;
-    aspect-ratio: 4/3;
-    transition: all 0.15s ease;
+    width: fit-content; /* Fit to video size */
+    margin: 0 auto;
+    max-width: 100%;
+    /* Removed aspect-ratio: 4/3 to avoid forcing ratio */
 }
 
 .video-wrapper.flash {
@@ -569,10 +571,10 @@ button:disabled {
 }
 
 #video {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
     display: block;
+    max-width: 100%;
+    height: auto; /* Maintain aspect ratio */
+    /* Remove object-fit to avoid letterboxing mismatch */
 }
 
 #overlay-canvas {
@@ -582,6 +584,7 @@ button:disabled {
     width: 100%;
     height: 100%;
     pointer-events: none;
+    /* Ensure canvas scales nicely if video scales */
 }
 
 .processing-indicator {

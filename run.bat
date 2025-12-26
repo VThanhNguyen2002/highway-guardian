@@ -8,7 +8,7 @@ echo.
 echo 1. Start ALL (Backend + Frontend)
 echo 2. Start Backend Only
 echo 3. Start Frontend Only
-echo 4. Setup Environment
+echo 4. Setup Environment (Install All Dependencies)
 echo 5. Exit
 echo.
 set /p choice="Enter your choice (1-5): "

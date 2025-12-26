@@ -115,15 +115,68 @@ class EnvironmentSetup:
             "pre-commit>=2.20.0"
         ]
         
-        packages = base_packages
-        if mode in ["full", "gpu"]:
-            packages.extend(full_packages)
-        if mode == "full":
-            packages.extend(dev_packages)
+        # Ưu tiên cài từ requirements.txt nếu có
+        requirements_path = self.project_root.parent / "src" / "requirements.txt"
+        if requirements_path.exists():
+            print(f"📄 Found requirements.txt at {requirements_path}")
+            cmd = [sys.executable, "-m", "pip", "install", "-r", str(requirements_path)]
+            return self.run_command(cmd)
+        else:
+            print("⚠️ requirements.txt not found, falling back to manual list...")
+            # Fallback to manual list (Code cũ)
+            packages = base_packages
+            if mode in ["full", "gpu"]:
+                packages.extend(full_packages)
+            if mode == "full":
+                packages.extend(dev_packages)
+            
+            cmd = [sys.executable, "-m", "pip", "install"] + packages
+            return self.run_command(cmd)
+
+    def install_frontend_dependencies(self):
+        """Install Frontend Dependencies (Node.js)"""
+        print("📦 Installing Frontend dependencies (npm install)...")
+        frontend_dir = self.project_root.parent / "frontend"
         
-        # Install packages
-        cmd = [sys.executable, "-m", "pip", "install"] + packages
-        return self.run_command(cmd)
+        if not frontend_dir.exists():
+            print("❌ Frontend directory not found!")
+            return False
+
+        # Check if npm is installed
+        if platform.system().lower() == "windows":
+            npm_cmd = "npm.cmd"
+        else:
+            npm_cmd = "npm"
+
+        try:
+            subprocess.run([npm_cmd, "--version"], check=True, capture_output=True)
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            print("❌ Node.js/npm is not installed. Please install Node.js to run Frontend.")
+            return False
+
+        print(f"   Working directory: {frontend_dir}")
+        return self.run_command([npm_cmd, "install"], cwd=str(frontend_dir))
+    
+    # Overriding run_command to support cwd
+    def run_command(self, cmd, check=True, cwd=None):
+        """Run shell command"""
+        try:
+            # Nếu cmd[0] là python, giữ nguyên, nếu không thì cứ chạy
+            run_cmd = cmd
+            
+            print(f"   Running: {' '.join(run_cmd) if isinstance(run_cmd, list) else run_cmd}")
+            result = subprocess.run(run_cmd, check=check, cwd=cwd, shell=(platform.system().lower()=="windows" and cwd is not None))
+            # Note: shell=True might be needed for npm on windows if not using .cmd, but npm.cmd is safer
+            
+            if result.returncode == 0:
+                print("   ✅ Success")
+                return True
+            else:
+                print("   ❌ Failed")
+                return False
+        except Exception as e:
+            print(f"❌ Error running command: {e}")
+            return False
     
     def setup_directories(self):
         """Create necessary directories"""
@@ -292,56 +345,31 @@ API_PORT=8000
         print("✅ Installation verified")
         return True
     
+    
     def setup(self, mode="full", force=False):
         """Main setup function"""
         print(f"🚀 Setting up Highway Guardian environment ({mode} mode)...")
         print(f"📍 Project root: {self.project_root}")
-        print(f"🐍 Python: {self.python_version}")
-        print(f"💻 System: {self.system}")
-        print("="*50)
         
-        # Check prerequisites
-        if not self.check_python_version():
-            return False
+        # 1. Backend Setup
+        print("\n--- BACKEND SETUP ---")
+        if not self.check_python_version(): return False
         
-        # Upgrade pip
         print("📦 Upgrading pip...")
         self.run_command([sys.executable, "-m", "pip", "install", "--upgrade", "pip"])
         
-        # Install PyTorch
-        gpu_support = mode in ["full", "gpu"]
-        if not self.install_pytorch(gpu_support):
-            if not force:
-                return False
-        
-        # Install other requirements
         if not self.install_requirements(mode):
-            if not force:
-                return False
-        
-        # Setup project structure
+            if not force: return False
+            
         self.setup_directories()
         self.create_env_file()
         
-        # Download sample models
-        if mode == "full":
-            self.download_sample_models()
-            self.setup_git_hooks()
-        
-        # Verify installation
-        if not self.verify_installation():
-            if not force:
-                return False
-        
-        print("="*50)
-        print("🎉 Environment setup completed successfully!")
-        print("")
-        print("Next steps:")
-        print("1. Update .env file with your API keys")
-        print("2. Add your dataset to data/ directory")
-        print("3. Run training: python src/training/scripts/train_car_detection.py")
-        print("4. Or improved sign detection: python src/training/scripts/train_sign_detection_improved.py")
-        
+        # 2. Frontend Setup
+        print("\n--- FRONTEND SETUP ---")
+        self.install_frontend_dependencies()
+
+        print("\n" + "="*50)
+        print("🎉 Setup Completed!")
         return True
 
 def main():
