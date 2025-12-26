@@ -159,15 +159,15 @@ data/raw/
 data/processed/
 data/external/
 *.csv
-*.json
+# *.json
 *.xml
-*.h5
+# *.h5
 *.hdf5
 *.pkl
 *.pickle
 
 # Model files
-*.pt
+# *.pt
 *.pth
 *.ckpt
 *.pb
@@ -229,7 +229,7 @@ ehthumbs.db
 Thumbs.db
 
 # Docker
-.dockerignore
+# .dockerignore
 
 # Jupyter
 .jupyter/
@@ -348,3 +348,6 @@ yarn-error.log*
 # Documentation builds
 docs/_build/
 site/
+results/
+data/traffic_signs/extracted/
+data/vehicles/extracted/

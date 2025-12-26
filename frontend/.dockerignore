@@ -1,0 +1,13 @@
+# Bỏ qua thư mục node_modules trên máy thật (Windows)
+node_modules
+
+# Bỏ qua file lock trên máy thật, 
+# vì chúng ta đã tạo file này bên trong image
+# package-lock.json
+
+# Bỏ qua thư mục build (nếu có)
+dist
+
+# Bỏ qua các file cấu hình IDE/Editor
+.vscode
+.idea
