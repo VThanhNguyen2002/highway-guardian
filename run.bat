@@ -5,22 +5,29 @@ echo ========================================================
 echo   HIGHWAY GUARDIAN - PROJECT LAUNCHER
 echo ========================================================
 echo.
-echo 1. Start ALL (Backend + Frontend)
-echo 2. Start Backend Only
-echo 3. Start Frontend Only
-echo 4. Setup Environment (Install All Dependencies)
-echo 5. Exit
+echo 1. Run with Docker (RECOMMENDED)
+echo 2. Run Locally (Backend + Frontend)
+echo 3. Start Backend Only (Local)
+echo 4. Start Frontend Only (Local)
+echo 5. Setup Environment (Local/Dev)
+echo 6. Exit
 echo.
-set /p choice="Enter your choice (1-5): "
+set /p choice="Enter your choice (1-6): "
 
-if "%choice%"=="1" goto start_all
-if "%choice%"=="2" goto start_backend
-if "%choice%"=="3" goto start_frontend
-if "%choice%"=="4" goto setup_env
-if "%choice%"=="5" goto exit
+if "%choice%"=="1" goto run_docker
+if "%choice%"=="2" goto start_all_local
+if "%choice%"=="3" goto start_backend
+if "%choice%"=="4" goto start_frontend
+if "%choice%"=="5" goto setup_env
+if "%choice%"=="6" goto exit
 
-:start_all
-echo Starting Backend and Frontend...
+:run_docker
+echo Starting with Docker...
+docker-compose up --build
+goto exit
+
+:start_all_local
+echo Starting Backend and Frontend locally...
 start cmd /k "cd scripts && start_backend.bat"
 cd frontend
 npm run dev
