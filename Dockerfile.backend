@@ -1,32 +1,27 @@
-# Sử dụng python 3.10-slim-bookworm (Bản ổn định cho Debian 12)
+# Sử dụng 1 Stage duy nhất để tránh nhân bản Layer
 FROM python:3.10-slim-bookworm
-
-# Thiết lập biến môi trường
-ENV TF_USE_LEGACY_KERAS=1
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONPATH=/app/src
 
 WORKDIR /app
 
-# Cài đặt thư viện hệ thống (libgl1 cho OpenCV)
-RUN apt-get update && apt-get install -y \
-    libgl1 \
-    libglib2.0-0 \
-    && rm -rf /var/lib/apt/lists/*
+# Cài đặt hệ thống và xóa rác ngay trong 1 dòng
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1 libglib2.0-0 libgomp1 \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements
-COPY src/requirements.txt .
+# Copy requirements và cài đặt
+COPY backend/requirements.txt .
+RUN pip install --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt \
+    # XÓA CÁC FILE TEST VÀ FILE THỪA CỦA TORCH ĐỂ GIẢM DUNG LƯỢNG (QUAN TRỌNG)
+    && find /usr/local/lib/python3.10/site-packages/torch -name "test" -type d -exec rm -rf {} + \
+    && find /usr/local/lib/python3.10/site-packages/torch -name "bin" -type d -exec rm -rf {} +
 
-# Cài đặt thư viện Python
-RUN pip install --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+# Copy code
+COPY backend/ ./backend/
+COPY src/core/ ./src/core/
+COPY models/ ./models/
+COPY docs/ ./docs/
 
-# Copy source code (CHỈ COPY SRC, KHÔNG COPY MODELS)
-COPY src/ ./src/
-
-# EXPOSE PORT
 EXPOSE 8000
 
-# Chạy ứng dụng
-CMD ["python", "src/scripts/main.py"]
+CMD ["python3", "-m", "uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]

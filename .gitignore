@@ -351,3 +351,35 @@ site/
 results/
 data/traffic_signs/extracted/
 data/vehicles/extracted/
+
+# --- STRICT EXCLUSIONS ADDED DURING AUDIT ---
+# Models
+*.pt
+*.pth
+*.weights
+*.h5
+
+# Data & Datasets
+data/
+uploads/
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Execution Logs & Runs
+**/runs/
+**/runs_detect/
+*.log
+
+# Environment & Secrets
+.env
+.venv/
+venv/
+ENV/
+
+# Python/OS Junk
+__pycache__/
+*.pyc
+.DS_Store

@@ -1,0 +1,35 @@
+# ============================================================================
+# Highway Guardian — Backend (FastAPI) Requirements
+# Python 3.10+
+# ============================================================================
+
+# Web framework
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+python-multipart==0.0.9
+
+# Settings & environment
+pydantic-settings==2.3.4
+python-dotenv==1.0.1
+
+# Database (async)
+sqlmodel==0.0.21
+aiosqlite==0.20.0          # SQLite async driver (dev)
+asyncpg==0.29.0            # PostgreSQL async driver (prod)
+
+# PDF parsing
+pdfplumber==0.11.4
+
+# Computer Vision — PyTorch CPU build
+# Switch extra-index-url to https://download.pytorch.org/whl/cu121 for GPU.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.5.1+cpu
+torchvision==0.20.1+cpu
+
+# Object detection
+ultralytics==8.3.0
+
+# Image processing
+opencv-python-headless==4.10.0.84
+Pillow==10.4.0
+numpy==1.26.4

@@ -1,34 +1,104 @@
+version: "3.9"
+
+# ===========================================================================
+# Highway Guardian — Docker Compose
+# Services: backend (FastAPI), streamlit (Inference UI), frontend (Vue+nginx)
+# Optional: postgres (production database)
+#
+# Usage:
+#   Development (SQLite):  docker compose up --build
+#   Production (PostgreSQL): docker compose --profile production up --build
+# ===========================================================================
+
 services:
+
+  # ── FastAPI Backend ────────────────────────────────────────────────────────
   backend:
     build:
       context: .
       dockerfile: Dockerfile.backend
-    container_name: highway-guardian-backend
+    container_name: hg-backend
     ports:
       - "8000:8000"
     volumes:
-      - ./models:/app/models
-      - ./src:/app/src
+      - ./models:/app/models:ro        # ML weight files (read-only)
+      - ./docs:/app/docs:ro            # QCVN 41:2019 PDF (read-only)
+      - uploads:/app/uploads           # Shared uploaded images volume
+    env_file:
+      - .env
     environment:
       - PYTHONUNBUFFERED=1
-      - TF_USE_LEGACY_KERAS=1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s              # Allow time for model + PDF loading
     restart: unless-stopped
     networks:
-      - highway-guardian-network
+      - highway-net
 
+  # ── Streamlit Inference UI ─────────────────────────────────────────────────
+  streamlit:
+    build:
+      context: .
+      dockerfile: Dockerfile.streamlit
+    container_name: hg-streamlit
+    ports:
+      - "8501:8501"
+    env_file:
+      - .env
+    environment:
+      - BACKEND_URL=http://backend:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - highway-net
+
+  # ── Vue.js Analytics Dashboard ─────────────────────────────────────────────
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: highway-guardian-frontend
+    container_name: hg-frontend
     ports:
       - "8080:80"
     depends_on:
       - backend
     restart: unless-stopped
     networks:
-      - highway-guardian-network
+      - highway-net
 
+  # ── PostgreSQL (production profile) ───────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: hg-postgres
+    profiles:
+      - production
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-pguser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: ${POSTGRES_DB:-highway_guardian}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pguser}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - highway-net
+
+# ===========================================================================
 networks:
-  highway-guardian-network:
+  highway-net:
     driver: bridge
+
+volumes:
+  uploads:
+  pg_data:

@@ -1,56 +1,30 @@
-# File: .dockerignore
+cat << 'EOF' > .dockerignore
+# 1. Bỏ qua mọi thứ theo mặc định (Chặn đứng copy lồng nhau)
+*
 
-# Git
-.git
-.gitignore
+# 2. CHỈ cho phép Docker nhìn thấy những file/thư mục này:
+!backend/
+!src/core/
+!streamlit_app/
+!frontend/
+!docs/
+!models/
+!docker-compose.yml
+!Dockerfile.backend
+!Dockerfile.streamlit
+!requirements.txt
 
-# Python Environment (QUAN TRỌNG: Chặn cả có chấm và không chấm)
-.venv/
-.venv
-venv/
-env/
-src/.venv/
-
-# Python Cache
-__pycache__/
-*/__pycache__
-*.pyc
-*.pyo
-*.pyd
-.Python
-
-# Docker
-Dockerfile
-Dockerfile.backend
-docker-compose.yml
-
-# IDE / Editor
-.idea/
-.vscode/
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Dữ liệu & Models (Đã mount volume nên không copy vào image)
-models/
-src/models/
-data/
-results/
-logs/
-*.pt
-*.pth
-*.h5
-*.onnx
-
-# Frontend
-node_modules
-frontend/node_modules
-frontend/dist
-# package-lock.json
-# frontend/package-lock.json
-
-# Build artifacts
-dist/
-build/
-*.egg-info/
+# 3. Kể cả trong những thư mục được phép, cũng phải cấm các rác này:
+**/__pycache__/
+**/*.pyc
+**/.env
+**/venv/
+**/env/
+**/.git/
+**/node_modules/
+**/*.zip
+**/*.mp4
+**/notebooks/
+**/results/
+Projects/
+EOF

@@ -1,70 +1,97 @@
-# Highway Guardian - Hướng Dẫn Dự Án Toàn Tập
+# 🛣️ Highway Guardian
 
-## 1. Tổng quan Dự án
-Highway Guardian là hệ thống AI nhận diện biển báo giao thông và phân loại xe sử dụng Deep Learning (YOLOv8 & CNN).
-- **Tính năng chính**:
-    - Nhận diện biển báo giao thông (với mã ID và loại biển).
-    - Phân loại xe (xe hơi, xe tải, xe máy, v.v.).
-    - Nhận diện Real-time qua Camera.
-    - Dashboard quản lý đẹp mắt.
+## 📌 Project Overview
+**Highway Guardian** is an advanced AI-powered traffic sign detection and classification system. Designed for high performance and accuracy, it provides real-time insights into road signs to enhance traffic safety and vehicle navigation systems.
 
-## 2. Cài đặt và Chạy Nhanh (Quick Start)
+## 🏗️ Architecture
+The system employs a robust **Two-Stage** approach for inference:
+1. **Detection (YOLOv8)**: Rapidly localizes traffic signs within input images or video streams, extracting the regions of interest (ROIs).
+2. **Classification (MobileNetV2)**: A lightweight PyTorch-based Convolutional Neural Network (CNN) that processes the cropped ROIs and accurately classifies them into specific traffic sign categories (supporting 103 distinct classes).
 
-### Yêu cầu
+## 🛠️ Tech Stack
+- **Backend API**: [FastAPI](https://fastapi.tiangolo.com/)
+- **Database**: [SQLAlchemy](https://www.sqlalchemy.org/)
+- **Deep Learning**: [PyTorch](https://pytorch.org/) (for MobileNetV2) & Ultralytics (for YOLOv8)
+- **Inference UI**: [Streamlit](https://streamlit.io/)
+- **Analytics Dashboard**: [Vue.js](https://vuejs.org/)
+
+## 📂 Directory Structure
+Below is a map of the key directories in the project:
+```text
+highway-guardian/
+├── backend/          # FastAPI application, endpoints, services, and database schemas
+├── frontend/         # Vue.js analytics dashboard and user interface
+├── models/           # Pre-trained core weights (YOLOv8 .pt and MobileNetV2 .pth/.h5)
+├── streamlit_app/    # Streamlit application for real-time inference and visualization
+├── data/             # Datasets, assets, and database storage (.db)
+├── scripts/          # Utility scripts and helpers
+└── docs/             # Additional project documentation and architecture notes
+```
+
+## 🚀 Installation & Setup
+
+### Prerequisites
 - Python 3.8+
-- Node.js & npm
-- Docker (Khuyến nghị, tùy chọn)
+- Node.js & npm (for Vue.js frontend)
+- Docker & Docker Compose (for containerized deployment)
 
-### Chạy bằng Script (Khuyến nghị)
-Sử dụng file `run.bat` ở thư mục gốc (sau khi dọn dẹp xong):
-```bash
-.\run.bat
-```
-Chọn các tùy chọn:
-1. **Start ALL (Dev Mode)**: Chạy cả Backend và Frontend.
-2. **Start Backend Only**: Chạy server Python (Port 8000).
-3. **Start Frontend Only**: Chạy giao diện Web (Port 5173).
+### 1. Native Environment Setup
 
-### Chạy Thủ công
-**Backend:**
+**Backend (FastAPI):**
 ```bash
-cd src
+# Navigate to the backend directory
+cd backend  # or cd src based on your exact entrypoint
+
+# Install Python dependencies
 pip install -r requirements.txt
-python main.py
-```
-Backend: http://localhost:8000
 
-**Frontend:**
+# Start the FastAPI server using Uvicorn
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+```
+*API running at: http://localhost:8000*
+
+**Streamlit UI:**
 ```bash
+# Navigate to the streamlit_app directory
+cd streamlit_app
+
+# Install Streamlit dependencies if needed
+pip install -r requirements.txt
+
+# Run the Streamlit application
+streamlit run app.py
+```
+*Streamlit running at: http://localhost:8501*
+
+**Frontend Dashboard (Vue.js):**
+```bash
+# Navigate to the frontend directory
 cd frontend
+
+# Install Node modules
 npm install
+
+# Start the Vue development server
 npm run dev
 ```
-Frontend: http://localhost:5173
+*Frontend running at: http://localhost:5173*
 
-## 3. Cấu trúc Dự án
+### 2. Docker Environment Setup (Recommended)
+You can launch the entire ecosystem simultaneously using Docker Compose.
+
+```bash
+# Build and start all services in detached mode
+docker-compose up --build -d
 ```
-highway-guardian/
-├── data/                    # Tập dữ liệu (biển báo, xe)
-├── models/                  # File Weights (YOLO .pt, CNN .h5)
-├── src/                     # Source code Backend (Python/FastAPI)
-├── frontend/                # Source code Frontend (Vue/React/Vite)
-├── scripts/                 # Các script tiện ích (.bat, .py)
-├── docs/                    # Tài liệu chi tiết khác
-└── run.bat                  # Script chạy chính
+All services will be brought up automatically. To stop the containers, run:
+```bash
+docker-compose down
 ```
 
-## 4. Training Model
-Các script training đã được chuyển vào thư mục `scripts/` hoặc `src/training/ scripts/`.
-- Để train model nhận diện xe: `python src/training/scripts/train_car_detection.py`
-- Để train model biển báo: `python src/training/scripts/train_sign_detection.py`
+## 📚 API Documentation
+When the FastAPI backend is running, you can explore the endpoints and test the API directly using the built-in interactive documentation:
+- **Swagger UI**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **ReDoc**: [http://localhost:8000/redoc](http://localhost:8000/redoc)
 
-## 5. Troubleshooting (Sửa lỗi thường gặp)
-- **Backend không chạy**: Kiểm tra port 8000 có bị chiếm không (`netstat -ano | findstr :8000`). Kill process nếu cần.
-- **Frontend lỗi node_modules**: Xóa thư mục `node_modules` và chạy lại `npm install`.
-- **Lỗi thiếu model**: Đảm bảo file `.pt` và `.h5` nằm đúng vị trí trong thư mục `models/`.
-
-## 6. Liên hệ
-- **Tác giả**: VThanhNguyen2002
-- **Email**: vietthanhnguyen2006@gmail.com
-- **GitHub**: https://github.com/VThanhNguyen2002
+---
+*Designed & Developed by VThanhNguyen2002*
