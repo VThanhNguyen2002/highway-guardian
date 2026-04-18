@@ -8,27 +8,21 @@
 
     <ul class="nav-links">
       <li>
-        <router-link to="/">
-          <vue-feather type="image" class="nav-icon"></vue-feather>
-          <span>Nhận diện (Ảnh)</span>
+        <router-link to="/dashboard">
+          <vue-feather type="bar-chart-2" class="nav-icon"></vue-feather>
+          <span>Dashboard</span>
         </router-link>
       </li>
       <li>
-        <router-link to="/camera">
-          <vue-feather type="camera" class="nav-icon"></vue-feather>
-          <span>Nhận diện (Camera)</span>
+        <router-link to="/dashboard#detection-logs">
+          <vue-feather type="list" class="nav-icon"></vue-feather>
+          <span>Detection Logs</span>
         </router-link>
       </li>
       <li>
-        <router-link to="/history">
-          <vue-feather type="clock" class="nav-icon"></vue-feather>
-          <span>Lịch sử</span>
-        </router-link>
-      </li>
-      <li>
-        <router-link to="/map">
-          <vue-feather type="map" class="nav-icon"></vue-feather>
-          <span>Bản đồ Biển báo</span>
+        <router-link to="/profile">
+          <vue-feather type="user" class="nav-icon"></vue-feather>
+          <span>Hồ sơ</span>
         </router-link>
       </li>
     </ul>

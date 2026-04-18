@@ -21,22 +21,22 @@ def _base_url() -> str:
     return f"{BACKEND_URL}{_API_PREFIX}"
 
 
-def detect(
+def submit_detect_task(
     file_bytes: bytes,
     filename: str,
     confidence_threshold: float = 0.25,
     mode: str = "yolo",
 ) -> dict[str, Any]:
-    """Send an image to the /detect endpoint and return the parsed JSON response.
+    """Send an image to the /detect endpoint to initiate a background task.
 
     Args:
         file_bytes: Raw bytes of the image file.
         filename: Original filename (used to set the correct MIME type).
-        confidence_threshold: Minimum YOLO confidence to forward to backend.
+        confidence_threshold: Minimum YOLO confidence.
+        mode: Run mode ('yolo', 'cnn', 'ensemble').
 
     Returns:
-        Parsed JSON dict with keys: ``success``, ``predictions``, ``count``, ``image_path``.
-        On network or API error, returns ``{"success": False, "error": str, "predictions": []}``.
+        JSON with `task_id` and `status` ('PENDING').
     """
     content_type = "image/jpeg" if filename.lower().endswith((".jpg", ".jpeg")) else "image/png"
     try:
@@ -52,9 +52,26 @@ def detect(
             response.raise_for_status()
             return response.json()
     except httpx.HTTPStatusError as exc:
-        return {"success": False, "error": exc.response.text, "predictions": []}
+        return {"success": False, "error": exc.response.text, "task_id": None}
     except Exception as exc:
-        return {"success": False, "error": str(exc), "predictions": []}
+        return {"success": False, "error": str(exc), "task_id": None}
+
+
+def get_detect_task_status(task_id: str) -> dict[str, Any]:
+    """Poll the backend for task status.
+    
+    Returns:
+        Parsed JSON dict with `status`, `result` and `error`.
+    """
+    try:
+        with httpx.Client(timeout=10.0) as client:
+            response = client.get(f"{_base_url()}/detect/{task_id}")
+            response.raise_for_status()
+            return response.json()
+    except httpx.HTTPStatusError as exc:
+        return {"success": False, "error": exc.response.text}
+    except Exception as exc:
+        return {"success": False, "error": str(exc)}
 
 
 def get_history(

@@ -28,8 +28,12 @@ torchvision==0.20.1+cpu
 
 # Object detection
 ultralytics==8.3.0
+ensemble-boxes>=1.0.4      # Weighted Boxes Fusion for ensemble pipeline
 
 # Image processing
 opencv-python-headless==4.10.0.84
 Pillow==10.4.0
 numpy==1.26.4
+
+# Firebase Admin SDK (Firestore sync)
+firebase-admin>=6.5.0

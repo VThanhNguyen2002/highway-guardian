@@ -1,0 +1,7 @@
+names:
+- vehicle
+nc: 1
+path: C:\PersonalProject\highway-guardian\data\demo_dataset
+test: test/images
+train: train/images
+val: val/images

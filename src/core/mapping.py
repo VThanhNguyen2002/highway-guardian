@@ -1,37 +1,37 @@
 """
 src/core/mapping.py
 
-Canonical traffic sign category mapping.
-Source: Zalo AI 2020 traffic sign dataset (IDs 1–7) + Custom 2026 standards (IDs 100–102).
+Zalo AI 2020 traffic sign class mapping — 7 classes + 1 background.
 
-CNN model outputs class indices in range [0, 102] (103 total).
-Index 0 is reserved/background; valid indices are 1–7 and 100–102.
+MobileNetV2 (best_mobilenet_v2.pth) outputs 8 logits:
+  - Index 0: Background (ignored in results display)
+  - Indices 1–7: The 7 Zalo AI 2020 traffic sign categories
+
+Source: configs/zalo_classes.json
 """
 
 from __future__ import annotations
 
 SIGN_NAMES: dict[int, str] = {
+    0: "Background",
     1: "Cấm ngược chiều",
     2: "Cấm dừng và đỗ",
     3: "Cấm rẽ",
     4: "Giới hạn tốc độ",
-    5: "Cấm còn lại",
-    6: "Nguy hiểm",
-    7: "Hiệu lệnh",
-    100: "LED",
-    101: "Metro",
-    102: "TramSac",
+    5: "Cấm ô tô",
+    6: "Cấm đỗ",
+    7: "Cấm các phương tiện khác",
 }
 
-# IDs that are newly proposed 2026 standards — always valid by definition.
-NEW_2026_SIGN_IDS: frozenset[int] = frozenset({100, 101, 102})
+# Valid foreground class IDs (exclude background at index 0)
+VALID_CLASS_IDS: frozenset[int] = frozenset(range(1, 8))
 
 
 def get_sign_name(class_id: int) -> str:
-    """Return the Vietnamese category name for a given CNN class index.
+    """Return the Vietnamese category name for a given class index.
 
     Args:
-        class_id: Integer in range [0, 102] produced by the MobileNetV2 classifier.
+        class_id: Integer in range [0, 7] produced by the MobileNetV2 classifier.
 
     Returns:
         Vietnamese category string, or a fallback label for unknown indices.
@@ -39,15 +39,13 @@ def get_sign_name(class_id: int) -> str:
     return SIGN_NAMES.get(class_id, f"Không xác định (ID={class_id})")
 
 
-def is_new_2026_sign(class_id: int) -> bool:
-    """Return True if the sign belongs to the newly proposed 2026 standard set.
-
-    These signs are not covered by QCVN 41:2019 and are always considered valid.
+def is_valid_class(class_id: int) -> bool:
+    """Return True if class_id is a foreground Zalo traffic sign class.
 
     Args:
         class_id: Integer class index from the CNN output.
 
     Returns:
-        True if the sign is a 2026 standard sign; False otherwise.
+        True if the sign is one of the 7 Zalo classes; False for background or unknown.
     """
-    return class_id in NEW_2026_SIGN_IDS
+    return class_id in VALID_CLASS_IDS

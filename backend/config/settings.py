@@ -40,16 +40,28 @@ class Settings(BaseSettings):
     # Database
     database_url: str = "sqlite+aiosqlite:///./highway_guardian.db"
 
-    # Base Directory (Khai báo là ClassVar để Pydantic không coi nó là một trường cần validate)
+    # Base Directory
     BASE_DIR: ClassVar[Path] = Path(__file__).resolve().parent.parent.parent
 
-    # Model & Doc Paths (Giá trị mặc định sẽ bị ghi đè bởi file .env)
-    yolo_model_path: Path = Path("models/yolo/yolov8.pt")
+    # ── V2 Model Paths ────────────────────────────────────────────────────────
+    # YOLOv8s v2 — two-stage tiling detector
+    yolo_model_path: Path = Path("models/yolo/yolov8_v2.pt")
+    # MobileNetV2 v2 — 8-class Zalo classifier (1 background + 7 traffic sign classes)
     cnn_model_path: Path = Path("models/cnn/best_mobilenet_v2.pth")
+
+    # PDF rule document
     pdf_path: Path = Path("docs/quy-chuan-ky-thuat-qcvn-41-2019-bgtvt-bao-hieu-duong-bo.pdf")
-    
+
+    # ── MobileNetV2 configuration ─────────────────────────────────────────────
+    # 8 = 7 Zalo foreground classes + 1 background (index 0)
     cnn_num_classes: int = 103
     cnn_input_size: tuple[int, int] = (224, 224)
+
+    # ── Two-stage pipeline (YOLO tiling → WBF → MobileNetV2) ─────────────────
+    tile_size: int = 640               # Tile edge length in pixels
+    tile_overlap: float = 0.2         # Fractional overlap between tiles
+    wbf_iou_threshold: float = 0.55   # WBF IoU merge threshold
+    wbf_conf_threshold: float = 0.25  # Per-box confidence floor before WBF
 
     # Detection defaults
     default_confidence_threshold: float = 0.25

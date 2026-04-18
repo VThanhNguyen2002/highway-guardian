@@ -26,7 +26,8 @@ from starlette.concurrency import run_in_threadpool
 
 from backend.config.settings import Settings, get_settings
 from backend.core.inference_pipeline import DetectionResult, TrafficSignDetector
-from backend.db.database import get_session
+from backend.core.task_manager import create_task, update_task_status, get_task_status, TaskStatus
+from backend.db.database import get_session, engine
 from backend.db.schemas import DetectionRecord
 
 router = APIRouter(prefix="/detect", tags=["Detection"])
@@ -65,13 +66,15 @@ class DetectionResultResponse(BaseModel):
     is_valid: bool
 
 
-class DetectResponse(BaseModel):
-    """Top-level response envelope for the /detect endpoint."""
+class DetectTaskResponse(BaseModel):
+    """Initial response returning the background task info."""
+    task_id: str
+    status: str
 
-    success: bool
-    image_path: str
-    predictions: list[DetectionResultResponse]
-    count: int
+class DetectTaskStatusResponse(DetectTaskResponse):
+    """Response when polling for task completion."""
+    result: Optional[list[DetectionResultResponse]] = None
+    error: Optional[str] = None
 
 
 # ---------------------------------------------------------------------------
@@ -94,8 +97,8 @@ def get_detector() -> TrafficSignDetector:
 
 @router.post(
     "",
-    response_model=DetectResponse,
-    status_code=status.HTTP_200_OK,
+    response_model=DetectTaskResponse,
+    status_code=status.HTTP_202_ACCEPTED,
     summary="Run two-stage traffic sign detection on an uploaded image.",
 )
 async def detect(
@@ -106,11 +109,11 @@ async def detect(
         float,
         Form(ge=0.0, le=1.0, description="Minimum YOLO detection confidence."),
     ] = 0.25,
-    mode: Annotated[str, Form(description="Detection mode: 'yolo' or 'cnn'")] = "yolo",
+    mode: Annotated[str, Form(description="Detection mode: 'yolo', 'cnn', or 'ensemble'")] = "yolo",
     settings: Settings = Depends(get_settings),
     session: AsyncSession = Depends(get_session),
     detector: TrafficSignDetector = Depends(get_detector),
-) -> DetectResponse:
+) -> DetectTaskResponse:
     """Detect and classify traffic signs in the uploaded image.
 
     Security measures applied in this order:
@@ -203,11 +206,37 @@ async def detect(
     background_tasks.add_task(save_path.write_bytes, file_bytes)
     await file.close()
 
-    # ── 4. Run inference in a thread pool worker ──────────────────────────────
-    # TrafficSignDetector.detect() is synchronous CPU-bound code.
-    # Calling it directly inside an async handler would block the event loop
-    # and starve all concurrent requests. run_in_threadpool delegates it to
-    # uvicorn's thread-pool executor, keeping the event loop free.
+    relative_image_path: str = str(save_path.relative_to(settings.uploads_dir.parent))
+    
+    # Generate task ID and enqueue task
+    task_id = str(uuid.uuid4())
+    create_task(task_id)
+
+    background_tasks.add_task(
+        _background_inference_task,
+        task_id,
+        file_bytes,
+        relative_image_path,
+        mode,
+        confidence_threshold,
+        detector
+    )
+
+    return DetectTaskResponse(
+        task_id=task_id,
+        status=TaskStatus.PENDING
+    )
+
+
+async def _background_inference_task(
+    task_id: str,
+    file_bytes: bytes,
+    relative_image_path: str,
+    mode: str,
+    confidence_threshold: float,
+    detector: TrafficSignDetector,
+) -> None:
+    update_task_status(task_id, TaskStatus.PROCESSING)
     from PIL import Image as PILImage
 
     try:
@@ -215,45 +244,62 @@ async def detect(
             with PILImage.open(io.BytesIO(file_bytes)) as img:
                 if mode == "cnn":
                     return [detector.classify_cnn(img)]
+                elif mode == "ensemble":
+                    return detector.detect_ensemble(img)
                 else:
                     return detector.detect_yolo(img, confidence_threshold=confidence_threshold)
 
         results: list[DetectionResult] = await run_in_threadpool(_run_inference)
-    except Exception as exc:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Inference failed: {exc}",
-        ) from exc
 
-    # ── 5. Persist detection records ──────────────────────────────────────────
-    relative_image_path: str = str(save_path.relative_to(settings.uploads_dir.parent))
-    now: datetime = datetime.utcnow()
+        # ── Persist detection records ──────────────────────────────────────────
+        async with AsyncSession(engine, expire_on_commit=False) as session:
+            now: datetime = datetime.utcnow()
+            for result in results:
+                record = DetectionRecord(
+                    timestamp=now,
+                    image_path=relative_image_path,
+                    class_id=result.class_id,
+                    class_name=result.class_name,
+                    confidence=result.confidence,
+                    is_valid=result.is_valid,
+                )
+                session.add(record)
+            await session.commit()
 
-    for result in results:
-        record = DetectionRecord(
-            timestamp=now,
-            image_path=relative_image_path,
-            class_id=result.class_id,
-            class_name=result.class_name,
-            confidence=result.confidence,
-            is_valid=result.is_valid,
+        update_task_status(
+            task_id,
+            TaskStatus.COMPLETED,
+            result=[
+                {
+                    "box_coordinates": r.box_coordinates,
+                    "confidence": r.confidence,
+                    "class_id": r.class_id,
+                    "class_name": r.class_name,
+                    "is_valid": r.is_valid,
+                }
+                for r in results
+            ],
         )
-        session.add(record)
 
-    await session.commit()
+    except Exception as exc:
+        update_task_status(task_id, TaskStatus.FAILED, error=str(exc))
 
-    return DetectResponse(
-        success=True,
-        image_path=relative_image_path,
-        predictions=[
-            DetectionResultResponse(
-                box_coordinates=r.box_coordinates,
-                confidence=r.confidence,
-                class_id=r.class_id,
-                class_name=r.class_name,
-                is_valid=r.is_valid,
-            )
-            for r in results
-        ],
-        count=len(results),
+
+@router.get(
+    "/{task_id}",
+    response_model=DetectTaskStatusResponse,
+    summary="Poll for detection task status.",
+)
+async def get_detect_task_status(task_id: str) -> DetectTaskStatusResponse:
+    task = get_task_status(task_id)
+    if not task:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task not found",
+        )
+    return DetectTaskStatusResponse(
+        task_id=task_id,
+        status=task["status"],
+        result=task.get("result"),
+        error=task.get("error"),
     )

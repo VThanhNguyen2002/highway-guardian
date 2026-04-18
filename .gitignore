@@ -1,385 +1,146 @@
-# Byte-compiled / optimized / DLL files
+# ============================================================
+# Highway Guardian — Root .gitignore
+# ============================================================
+
+# ── Python ──────────────────────────────────────────────────
 __pycache__/
 *.py[cod]
 *$py.class
-
-# C extensions
 *.so
-
-# Distribution / packaging
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
 *.egg
-MANIFEST
+*.egg-info/
+dist/
+build/
+.eggs/
 
-# PyInstaller
-*.manifest
-*.spec
-
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
-
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
-.pytest_cache/
-cover/
-
-# Translations
-*.mo
-*.pot
-
-# Django stuff:
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
-
-# Flask stuff:
-instance/
-.webassets-cache
-
-# Scrapy stuff:
-.scrapy
-
-# Sphinx documentation
-docs/_build/
-
-# PyBuilder
-.pybuilder/
-target/
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# IPython
-profile_default/
-ipython_config.py
-
-# pyenv
+# ── Virtual environments ─────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
 .python-version
 
-# pipenv
-Pipfile.lock
-
-# poetry
-poetry.lock
-
-# pdm
-.pdm.toml
-
-# PEP 582
-__pypackages__/
-
-# Celery stuff
-celerybeat-schedule
-celerybeat.pid
-
-# SageMath parsed files
-*.sage.py
-
-# Environments
+# ── Environment & Secrets (NEVER commit) ────────────────────
 .env
-.env.local
-.env.*.local
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-<<<<<<< HEAD
-# Kaggle API credentials
-kaggle.json
-=======
-# Frontend environment
+.env.*
+*.env
 frontend/.env
-frontend/.env.local
-frontend/.env.*.local
->>>>>>> d56d32b (Changed: Finish UI and main function in this project)
+frontend/.env.*
 
-# Spyder project settings
-.spyderproject
-.spyproject
+# ── Firebase Keys (NEVER commit) ────────────────────────────
+keys/
+firebase_key.json
+serviceAccountKey.json
+*.key
+*.pem
 
-# Rope project settings
-.ropeproject
-
-# mkdocs documentation
-/site
-
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
-
-# Pyre type checker
-.pyre/
-
-# pytype static type analyzer
-.pytype/
-
-# Cython debug symbols
-cython_debug/
-
-# PyCharm
-.idea/
-
-# VSCode
-.vscode/
-
-# Machine Learning specific
-# Datasets
-data/raw/
-data/processed/
-data/external/
-*.csv
-# *.json
-*.xml
-# *.h5
-*.hdf5
-*.pkl
-*.pickle
-
-# Model files
-# *.pt
-*.pth
-*.ckpt
-*.pb
-*.onnx
-*.tflite
-*.engine
-models/weights/
-models/checkpoints/
-models/saved_models/
-
-# Training logs
-logs/
-tensorboard_logs/
-wandb/
-outputs/
-
-# Results and experiments
-experiments/
-artifacts/
-
-# Large files
-*.tar.gz
-*.rar
-*.7z
-
-# Images and videos (except small examples)
-*.jpg
-*.jpeg
-*.png
-*.gif
-*.bmp
-*.tiff
-*.mp4
-*.avi
-*.mov
-*.mkv
-*.webm
-
-# Audio files
-*.wav
-*.mp3
-*.flac
-*.aac
-
-# Temporary files
-*.tmp
-*.temp
-*.swp
-*.swo
-*~
-
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Docker
-# .dockerignore
-
-# Jupyter
-.jupyter/
-
-# Config files with secrets
-config/secrets.yaml
-config/local.yaml
-.secrets
-
-# Cache directories
-.cache/
-cache/
-
-# Backup files
-*.bak
-*.backup
-
-# IDE files
-*.sublime-project
-*.sublime-workspace
-
-# Profiling
-*.prof
-
-# Coverage
-.coverage
-htmlcov/
-
-# pytest
-.pytest_cache/
-
-# mypy
-.mypy_cache/
-
-# Weights & Biases
-wandb/
-
-# MLflow
-mlruns/
-
-# DVC
-.dvc
-.dvcignore
-
-# Hydra
-outputs/
-.hydra/
-
-# Optuna
-optuna.db
-
-# Ray Tune
-ray_results/
-
-# Specific to this project
-# Keep small example images
-!data/examples/
-!docs/images/
-
-# Keep model architecture files but not weights
+# ── AI Model Weights (too large for Git; download manually) ──
+models/**/*.pt
+models/**/*.pth
+models/**/*.ckpt
+models/**/*.onnx
+models/**/*.h5
+models/**/*.weights
+# Never ignore model config / architecture files
 !models/*.py
 !models/configs/
+!models/**/.gitkeep
 
-# Keep empty directories
-!.gitkeep
+# ── Uploads (user-submitted images — never persist in Git) ───
+uploads/*
+!uploads/.gitkeep
 
-# Node modules
+# ── Local Databases ─────────────────────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+
+# ── Node / Frontend ─────────────────────────────────────────
 node_modules/
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
+frontend/.yarn/
 
-# Firebase
-firebase-debug.log
-.firebase/
-firestore-debug.log
-ui-debug.log
-
-# Secrets and credentials
-*.key
-*.pem
-secrets/
-credentials/
-config/secrets.yaml
-config/local.yaml
-.secrets
-
-# Test files
-test_images/
-test_videos/
-*.test.jpg
-*.test.png
-
-# Backup files
-*.backup
-*.bak
-*~
-
-# IDE
-.idea/
-.vscode/
-*.sublime-project
-*.sublime-workspace
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Logs
+# ── Logs ────────────────────────────────────────────────────
 *.log
 logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
 
-# Documentation builds
-docs/_build/
-site/
-results/
+# ── Testing & Coverage ──────────────────────────────────────
+.pytest_cache/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.tox/
+.nox/
+
+# ── Type checkers & linters ─────────────────────────────────
+.mypy_cache/
+.pytype/
+.pyre/
+.ruff_cache/
+
+# ── ML Training artefacts ───────────────────────────────────
+runs/
+**/runs/
+wandb/
+mlruns/
+tensorboard_logs/
+outputs/
+.hydra/
+ray_results/
+
+# ── Data directories (raw datasets — use DVC/S3 instead) ────
+data/raw/
+data/processed/
+data/external/
 data/traffic_signs/extracted/
 data/vehicles/extracted/
 
-# --- STRICT EXCLUSIONS ADDED DURING AUDIT ---
-# Models
-*.pt
-*.pth
-*.weights
-*.h5
+# ── Misc large files ────────────────────────────────────────
+*.tar.gz
+*.rar
+*.zip
+*.7z
+*.pkl
+*.pickle
+*.hdf5
 
-# Data & Datasets
-data/
-uploads/
-
-# Databases
-*.db
-*.sqlite
-*.sqlite3
-
-# Execution Logs & Runs
-**/runs/
-**/runs_detect/
-*.log
-
-# Environment & Secrets
-.env
-.venv/
-venv/
-ENV/
-
-# Python/OS Junk
-__pycache__/
-*.pyc
+# ── OS generated ────────────────────────────────────────────
 .DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+
+# ── IDE ─────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# ── Firebase hosting ────────────────────────────────────────
+.firebase/
+
+# ── Jupyter ─────────────────────────────────────────────────
+.ipynb_checkpoints
+.jupyter/
+
+# ── Misc ────────────────────────────────────────────────────
+*.bak
+*.backup
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+Pipfile.lock
+.cache/

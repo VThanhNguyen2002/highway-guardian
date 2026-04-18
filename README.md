@@ -1,97 +1,114 @@
-# 🛣️ Highway Guardian
+# Highway Guardian 🛡️
 
-## 📌 Project Overview
-**Highway Guardian** is an advanced AI-powered traffic sign detection and classification system. Designed for high performance and accuracy, it provides real-time insights into road signs to enhance traffic safety and vehicle navigation systems.
+**AI-Powered Traffic Infrastructure Management & Analytics Dashboard**
 
-## 🏗️ Architecture
-The system employs a robust **Two-Stage** approach for inference:
-1. **Detection (YOLOv8)**: Rapidly localizes traffic signs within input images or video streams, extracting the regions of interest (ROIs).
-2. **Classification (MobileNetV2)**: A lightweight PyTorch-based Convolutional Neural Network (CNN) that processes the cropped ROIs and accurately classifies them into specific traffic sign categories (supporting 103 distinct classes).
-
-## 🛠️ Tech Stack
-- **Backend API**: [FastAPI](https://fastapi.tiangolo.com/)
-- **Database**: [SQLAlchemy](https://www.sqlalchemy.org/)
-- **Deep Learning**: [PyTorch](https://pytorch.org/) (for MobileNetV2) & Ultralytics (for YOLOv8)
-- **Inference UI**: [Streamlit](https://streamlit.io/)
-- **Analytics Dashboard**: [Vue.js](https://vuejs.org/)
-
-## 📂 Directory Structure
-Below is a map of the key directories in the project:
-```text
-highway-guardian/
-├── backend/          # FastAPI application, endpoints, services, and database schemas
-├── frontend/         # Vue.js analytics dashboard and user interface
-├── models/           # Pre-trained core weights (YOLOv8 .pt and MobileNetV2 .pth/.h5)
-├── streamlit_app/    # Streamlit application for real-time inference and visualization
-├── data/             # Datasets, assets, and database storage (.db)
-├── scripts/          # Utility scripts and helpers
-└── docs/             # Additional project documentation and architecture notes
-```
-
-## 🚀 Installation & Setup
-
-### Prerequisites
-- Python 3.8+
-- Node.js & npm (for Vue.js frontend)
-- Docker & Docker Compose (for containerized deployment)
-
-### 1. Native Environment Setup
-
-**Backend (FastAPI):**
-```bash
-# Navigate to the backend directory
-cd backend  # or cd src based on your exact entrypoint
-
-# Install Python dependencies
-pip install -r requirements.txt
-
-# Start the FastAPI server using Uvicorn
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-```
-*API running at: http://localhost:8000*
-
-**Streamlit UI:**
-```bash
-# Navigate to the streamlit_app directory
-cd streamlit_app
-
-# Install Streamlit dependencies if needed
-pip install -r requirements.txt
-
-# Run the Streamlit application
-streamlit run app.py
-```
-*Streamlit running at: http://localhost:8501*
-
-**Frontend Dashboard (Vue.js):**
-```bash
-# Navigate to the frontend directory
-cd frontend
-
-# Install Node modules
-npm install
-
-# Start the Vue development server
-npm run dev
-```
-*Frontend running at: http://localhost:5173*
-
-### 2. Docker Environment Setup (Recommended)
-You can launch the entire ecosystem simultaneously using Docker Compose.
-
-```bash
-# Build and start all services in detached mode
-docker-compose up --build -d
-```
-All services will be brought up automatically. To stop the containers, run:
-```bash
-docker-compose down
-```
-
-## 📚 API Documentation
-When the FastAPI backend is running, you can explore the endpoints and test the API directly using the built-in interactive documentation:
-- **Swagger UI**: [http://localhost:8000/docs](http://localhost:8000/docs)
-- **ReDoc**: [http://localhost:8000/redoc](http://localhost:8000/redoc)
+A production-grade system for automated Vietnamese traffic sign detection using a two-stage ensemble AI pipeline, with a real-time Firebase-backed analytics dashboard.
 
 ---
-*Designed & Developed by VThanhNguyen2002*
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  Streamlit App (Live Inference UI)                      │
+│  • Real-time camera/video input                          │
+│  • YOLOv8 tiling → MobileNetV2 ensemble                 │
+└───────────────────┬─────────────────────────────────────┘
+                    │ HTTP (FastAPI)
+┌───────────────────▼─────────────────────────────────────┐
+│  FastAPI Backend  (port 8000)                           │
+│  • POST /api/v1/detect  — async image upload + polling  │
+│  • Two-stage inference (YOLOv8 + MobileNetV2)           │
+│  • Firebase Firestore sync (sync_detection)              │
+└───────────────────┬─────────────────────────────────────┘
+                    │ Firestore onSnapshot
+┌───────────────────▼─────────────────────────────────────┐
+│  Vue 3 Dashboard  (port 5173)                           │
+│  • Real-time KPIs, charts, detection logs               │
+│  • CRUD: edit labels, delete false positives            │
+│  • Profile page & role-based auth guard                  │
+└─────────────────────────────────────────────────────────┘
+```
+
+## Two-Stage Inference Pipeline
+
+| Stage | Model | Task |
+|-------|-------|------|
+| 1 — Detection | YOLOv8s (tiled 640×640, 20% overlap) | Locate sign bounding boxes |
+| WBF | Weighted Boxes Fusion | Merge overlapping tile detections |
+| 2 — Classification | MobileNetV2 (224×224 crops) | Classify into 7 Zalo AI 2020 classes |
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------| 
+| AI Models | YOLOv8 (Ultralytics), MobileNetV2 (PyTorch) |
+| Backend | FastAPI, Uvicorn, ensemble-boxes |
+| Inference UI | Streamlit, OpenCV |
+| Dashboard | Vue 3, Vite, Chart.js, Vue Router, Pinia |
+| Database | Firebase Firestore (real-time) |
+| Auth | Firebase Authentication |
+
+## Quickstart
+
+```bash
+# 1. Install Python dependencies (from project root)
+pip install -r backend/requirements.txt
+
+# 2. Place model weights (see models/README.md)
+#    models/yolov8_v2.pt
+#    models/best_mobilenet_v2.pth
+
+# 3. Copy and fill environment file
+cp .env.example .env
+
+# 4a. One-command start (Linux / macOS)
+bash run.sh
+
+# 4b. One-command start (Windows)
+run.bat
+
+# --- OR manually in 3 terminals: ---
+# Terminal 1 — Backend API
+python3 -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+
+# Terminal 2 — Streamlit inference UI
+cd streamlit_app && streamlit run app.py
+
+# Terminal 3 — Vue Dashboard
+cd frontend && npm install && npm run dev
+```
+
+## Project Structure
+
+```
+highway-guardian/
+├── backend/          # FastAPI app, inference pipeline, API routes
+├── frontend/         # Vue 3 dashboard (see frontend/README.md)
+├── streamlit_app/    # Live inference UI
+├── models/           # Model weights (git-ignored — see models/README.md)
+├── src/              # Shared Python utilities (mapping, firebase_sync)
+├── configs/          # Zalo class config, training YAML files
+├── notebooks/        # Jupyter training notebooks (YOLO + CNN)
+├── scripts/          # Dataset management & deployment utilities
+├── keys/             # Firebase service account key (git-ignored)
+├── uploads/          # Temporary image uploads (git-ignored)
+├── data/             # Datasets (git-ignored)
+├── run.sh            # Linux/macOS one-click startup
+└── run.bat           # Windows one-click startup
+```
+
+## Environment Variables
+
+Copy `.env.example` to `.env` and fill in:
+
+```env
+# Firebase Admin SDK
+FIREBASE_KEY_PATH=keys/firebase_key.json
+
+# App config
+DEBUG=true
+CORS_ORIGINS=http://localhost:5173
+```
+
+The **frontend** uses separate `VITE_FIREBASE_*` variables — see `frontend/README.md`.

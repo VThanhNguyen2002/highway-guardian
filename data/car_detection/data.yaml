@@ -1,0 +1,9 @@
+# Car Detection Dataset Configuration
+path: C:/PersonalProject/highway-guardian/data/car_detection/car_dataset-master
+train: train/images
+val: valid/images
+test: test/images
+
+# Classes
+nc: 1  # number of classes
+names: ['car']  # class names

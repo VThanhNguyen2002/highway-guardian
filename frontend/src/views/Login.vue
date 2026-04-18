@@ -109,18 +109,9 @@ async function handleLogin() {
 
   // 2. Kiểm tra kết quả
   if (typeof result === 'boolean' && result === true) {
-    // Đăng nhập thành công - Hiển thị Toast
-    showToast(
-      'success',
-      'Đăng nhập thành công!',
-      'Đang chuyển hướng đến trang chủ...',
-      2000
-    );
-    
-    // Đợi 2 giây để user thấy toast, sau đó chuyển trang
-    setTimeout(() => {
-      router.push({ name: 'Detect' }); 
-    }, 2000);
+    showToast('success', 'Đăng nhập thành công!', 'Đang chuyển hướng...', 1500);
+    // Redirect immediately — the router guard will take over
+    router.push({ name: 'Dashboard' });
 
   } else {
     // Xử lý lỗi

@@ -1,14 +1,10 @@
-// frontend/src/router/index.js
+// frontend/src/router/index.ts
 import { createRouter, createWebHistory } from 'vue-router';
-// BỎ watch, watchOnce
 import { useAuthStore } from '../stores/authStore';
 
-// (Import các view...)
-import Login from '../views/Login.vue';
-import Detect from '../views/Detect.vue';
-import Camera from '../views/Camera.vue';
-import History from '../views/History.vue';
-import Map from '../views/Map.vue';
+import Login     from '../views/Login.vue';
+import Dashboard from '../views/Dashboard.vue';
+import Profile   from '../views/Profile.vue';
 
 const routes = [
   {
@@ -19,27 +15,19 @@ const routes = [
   },
   {
     path: '/',
-    name: 'Detect',
-    component: Detect,
-    meta: { title: 'Nhận diện (Tải ảnh)', requiresAuth: true }
+    redirect: '/dashboard'
   },
   {
-    path: '/camera',
-    name: 'Camera',
-    component: Camera,
-    meta: { title: 'Nhận diện (Camera)', requiresAuth: true }
+    path: '/dashboard',
+    name: 'Dashboard',
+    component: Dashboard,
+    meta: { title: 'Dashboard — Highway Guardian', requiresAuth: true }
   },
   {
-    path: '/history',
-    name: 'History',
-    component: History,
-    meta: { title: 'Lịch sử Phát hiện', requiresAuth: true }
-  },
-  {
-    path: '/map',
-    name: 'Map',
-    component: Map,
-    meta: { title: 'Bản đồ Biển báo', requiresAuth: true }
+    path: '/profile',
+    name: 'Profile',
+    component: Profile,
+    meta: { title: 'Hồ sơ — Highway Guardian', requiresAuth: true }
   }
 ];
 
@@ -48,22 +36,15 @@ const router = createRouter({
   routes
 });
 
-// SỬA LẠI TOÀN BỘ GUARD
 router.beforeEach((to, _from, next) => {
-  const authStore = useAuthStore();
-  const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
+  const authStore    = useAuthStore();
+  const requiresAuth = to.matched.some(r => r.meta.requiresAuth);
 
-  // Vì main.js đã 'await checkAuth()',
-  // nên khi code này chạy, authStore.isLoggedIn đã là CHÍNH XÁC
-  
   if (requiresAuth && !authStore.isLoggedIn) {
-    // Nếu trang yêu cầu login VÀ user chưa login -> Về Login
     next({ name: 'Login' });
   } else if (to.name === 'Login' && authStore.isLoggedIn) {
-    // Nếu đã login mà vào trang login -> Về trang chủ
-    next({ name: 'Detect' });
+    next({ name: 'Dashboard' });
   } else {
-    // Các trường hợp khác
     next();
   }
 });

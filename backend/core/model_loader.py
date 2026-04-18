@@ -2,6 +2,13 @@
 backend/core/model_loader.py
 
 Singleton module to cache the YOLOv8 and MobileNetV2 models.
+Thread-safe load via _lock. Both models are loaded once on startup
+and reused across every inference request.
+
+Architecture (v2):
+  Stage 1 — YOLOv8s (yolov8_v2.pt):   detects sign regions via tiling
+  Stage 2 — MobileNetV2 (best_mobilenet_v2.pth):  classifies crops
+             8 output logits: index 0 = background, indices 1–7 = Zalo classes
 """
 
 from __future__ import annotations
@@ -23,7 +30,7 @@ class _ModelStore:
 
     def __init__(self) -> None:
         self.yolo: Optional[YOLO] = None
-        self.cnn: Optional[nn.Module] = None
+        self.cnn: Optional[nn.Module] = None   # MobileNetV2 — 8-class Zalo classifier
 
 
 _store = _ModelStore()
@@ -34,14 +41,30 @@ def get_device() -> torch.device:
     return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
+# ---------------------------------------------------------------------------
+# Model builders
+# ---------------------------------------------------------------------------
+
 def _build_mobilenetv2(num_classes: int) -> nn.Module:
-    model = models.mobilenet_v2(pretrained=False)
+    """Build a MobileNetV2 with a custom classification head.
+
+    Args:
+        num_classes: Total output units (8 for Zalo: 1 background + 7 classes).
+    """
+    model = models.mobilenet_v2(weights=None)
     model.classifier[1] = nn.Linear(model.last_channel, num_classes)
     return model
 
 
+# ---------------------------------------------------------------------------
+# Public load function
+# ---------------------------------------------------------------------------
+
 def load_models(settings: Settings) -> None:
-    """Load models into the module-level cache."""
+    """Load YOLOv8 and MobileNetV2 into the module-level cache.
+
+    Uses a threading lock so concurrent startup calls are safe.
+    """
     global _store
 
     with _lock:
@@ -56,10 +79,13 @@ def load_models(settings: Settings) -> None:
         if not cnn_path.exists():
             raise FileNotFoundError(f"CNN model not found: {cnn_path}")
 
-        print(f"[ModelLoader] Loading YOLO from: {yolo_path}")
+        print(f"[ModelLoader] Loading YOLOv8 from: {yolo_path}")
         _store.yolo = YOLO(str(yolo_path))
 
-        print(f"[ModelLoader] Loading CNN from: {cnn_path}")
+        print(
+            f"[ModelLoader] Loading MobileNetV2 "
+            f"({settings.cnn_num_classes} classes) from: {cnn_path}"
+        )
         cnn = _build_mobilenetv2(settings.cnn_num_classes)
         state_dict = torch.load(cnn_path, map_location="cpu", weights_only=True)
         cnn.load_state_dict(state_dict)
@@ -67,16 +93,20 @@ def load_models(settings: Settings) -> None:
         cnn.eval()
         _store.cnn = cnn
 
-        print("[ModelLoader] All models loaded successfully.")
+        print("[ModelLoader] YOLOv8 + MobileNetV2 loaded successfully.")
 
+
+# ---------------------------------------------------------------------------
+# Public accessors
+# ---------------------------------------------------------------------------
 
 def get_yolo() -> YOLO:
     if _store.yolo is None:
-        raise RuntimeError("YOLO model is not loaded. Call load_models() first.")
+        raise RuntimeError("YOLO model not loaded. Call load_models() first.")
     return _store.yolo
 
 
 def get_cnn() -> nn.Module:
     if _store.cnn is None:
-        raise RuntimeError("CNN model is not loaded. Call load_models() first.")
+        raise RuntimeError("CNN model not loaded. Call load_models() first.")
     return _store.cnn
